@@ -1,10 +1,10 @@
-# GORM MySQL Dialector
+# GORM MySQL Driver
 
 ## USAGE
 
 ```go
 import (
-  "gorm.io/dialector/mysql"
+  "gorm.io/driver/mysql"
   "gorm.io/gorm"
 )
 
