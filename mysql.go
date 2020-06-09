@@ -59,7 +59,22 @@ func (dialector Dialector) ClauseBuilders() map[string]clause.ClauseBuilder {
 					}
 				}
 
-				onConflict.DoUpdates.Build(builder)
+				for idx, assignment := range onConflict.DoUpdates {
+					if idx > 0 {
+						builder.WriteByte(',')
+					}
+
+					builder.WriteQuoted(assignment.Column)
+					builder.WriteByte('=')
+					if column, ok := assignment.Value.(clause.Column); ok && column.Table == "excluded" {
+						column.Table = ""
+						builder.WriteString("VALUES(")
+						builder.WriteQuoted(column)
+						builder.WriteByte(')')
+					} else {
+						builder.AddVar(builder, assignment.Value)
+					}
+				}
 			} else {
 				c.Build(builder)
 			}
