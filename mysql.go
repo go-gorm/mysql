@@ -143,7 +143,9 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 	case schema.String:
 		size := field.Size
 		if size == 0 {
-			if field.PrimaryKey || field.HasDefaultValue {
+			hasIndex := field.TagSettings["INDEX"] != "" || field.TagSettings["UNIQUE_INDEX"] != ""
+			// TEXT, GEOMETRY or JSON column can't have a default value
+			if field.PrimaryKey || field.HasDefaultValue || hasIndex {
 				size = 256
 			}
 		}
