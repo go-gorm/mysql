@@ -14,12 +14,22 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+type Config struct {
+	DSN                      string
+	DisableDatetimePrecision bool
+	DefaultStringSize        uint
+}
+
 type Dialector struct {
-	DSN string
+	Config
 }
 
 func Open(dsn string) gorm.Dialector {
-	return &Dialector{DSN: dsn}
+	return &Dialector{Config: Config{DSN: dsn}}
+}
+
+func New(config Config) gorm.Dialector {
+	return &Dialector{Config: config}
 }
 
 func (dialector Dialector) Name() string {
@@ -142,11 +152,17 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 		return "double"
 	case schema.String:
 		size := field.Size
+		defaultSize := dialector.DefaultStringSize
+
 		if size == 0 {
-			hasIndex := field.TagSettings["INDEX"] != "" || field.TagSettings["UNIQUE_INDEX"] != ""
-			// TEXT, GEOMETRY or JSON column can't have a default value
-			if field.PrimaryKey || field.HasDefaultValue || hasIndex {
-				size = 256
+			if defaultSize > 0 {
+				size = int(defaultSize)
+			} else {
+				hasIndex := field.TagSettings["INDEX"] != "" || field.TagSettings["UNIQUE_INDEX"] != ""
+				// TEXT, GEOMETRY or JSON column can't have a default value
+				if field.PrimaryKey || field.HasDefaultValue || hasIndex {
+					size = 256
+				}
 			}
 		}
 
@@ -158,12 +174,15 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 		return fmt.Sprintf("varchar(%d)", size)
 	case schema.Time:
 		precision := ""
-		if field.Precision == 0 {
-			field.Precision = 3
-		}
 
-		if field.Precision > 0 {
-			precision = fmt.Sprintf("(%d)", field.Precision)
+		if !dialector.DisableDatetimePrecision {
+			if field.Precision == 0 {
+				field.Precision = 3
+			}
+
+			if field.Precision > 0 {
+				precision = fmt.Sprintf("(%d)", field.Precision)
+			}
 		}
 
 		if field.NotNull || field.PrimaryKey {
