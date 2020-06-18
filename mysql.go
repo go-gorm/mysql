@@ -201,5 +201,5 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 		return "longblob"
 	}
 
-	return ""
+	return string(field.DataType)
 }
