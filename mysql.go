@@ -99,6 +99,10 @@ func (dialector Dialector) ClauseBuilders() map[string]clause.ClauseBuilder {
 	}
 }
 
+func (dialector Dialector) DefaultValueOf(field *schema.Field) clause.Expression {
+	return clause.Expr{SQL: "DEFAULT"}
+}
+
 func (dialector Dialector) Migrator(db *gorm.DB) gorm.Migrator {
 	return Migrator{migrator.Migrator{Config: migrator.Config{
 		DB:        db,
