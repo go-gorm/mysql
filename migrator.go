@@ -6,10 +6,37 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/migrator"
+	"gorm.io/gorm/schema"
 )
 
 type Migrator struct {
 	migrator.Migrator
+}
+
+func (m Migrator) FullDataTypeOf(field *schema.Field) (expr clause.Expr) {
+	expr.SQL = m.DataTypeOf(field)
+
+	if field.NotNull {
+		expr.SQL += " NOT NULL"
+	}
+
+	if field.Unique {
+		expr.SQL += " UNIQUE"
+	}
+
+	if field.HasDefaultValue && field.DefaultValue != "" {
+		if field.DataType == schema.String && field.DefaultValueInterface != nil {
+			expr.SQL += " DEFAULT " + m.Dialector.Explain("?", field.DefaultValue)
+		} else {
+			expr.SQL += " DEFAULT " + field.DefaultValue
+		}
+	}
+
+	if value, ok := field.TagSettings["COMMENT"]; ok {
+		expr.SQL += " COMMENT " + m.Dialector.Explain("?", value)
+	}
+
+	return
 }
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
