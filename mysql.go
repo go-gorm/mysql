@@ -162,10 +162,10 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 			if defaultSize > 0 {
 				size = int(defaultSize)
 			} else {
-				hasIndex := field.TagSettings["INDEX"] != "" || field.TagSettings["UNIQUE_INDEX"] != ""
+				hasIndex := field.TagSettings["INDEX"] != "" || field.TagSettings["UNIQUE"] != ""
 				// TEXT, GEOMETRY or JSON column can't have a default value
 				if field.PrimaryKey || field.HasDefaultValue || hasIndex {
-					size = 256
+					size = 191 // utf8mb4
 				}
 			}
 		}
