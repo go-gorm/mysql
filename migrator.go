@@ -13,30 +13,14 @@ type Migrator struct {
 	migrator.Migrator
 }
 
-func (m Migrator) FullDataTypeOf(field *schema.Field) (expr clause.Expr) {
-	expr.SQL = m.DataTypeOf(field)
-
-	if field.NotNull {
-		expr.SQL += " NOT NULL"
-	}
-
-	if field.Unique {
-		expr.SQL += " UNIQUE"
-	}
-
-	if field.HasDefaultValue && field.DefaultValue != "" {
-		if field.DataType == schema.String && field.DefaultValueInterface != nil {
-			expr.SQL += " DEFAULT " + m.Dialector.Explain("?", field.DefaultValue)
-		} else {
-			expr.SQL += " DEFAULT " + field.DefaultValue
-		}
-	}
+func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
+	expr := m.Migrator.FullDataTypeOf(field)
 
 	if value, ok := field.TagSettings["COMMENT"]; ok {
 		expr.SQL += " COMMENT " + m.Dialector.Explain("?", value)
 	}
 
-	return
+	return expr
 }
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
