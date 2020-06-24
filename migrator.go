@@ -11,6 +11,7 @@ import (
 
 type Migrator struct {
 	migrator.Migrator
+	Dialector
 }
 
 func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
@@ -37,26 +38,69 @@ func (m Migrator) AlterColumn(value interface{}, field string) error {
 
 func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error {
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		var field *schema.Field
-		if f := stmt.Schema.LookUpField(oldName); f != nil {
-			oldName = f.DBName
-			field = f
-		}
+		if m.Dialector.DontSupportRenameColumn {
+			var field *schema.Field
+			if f := stmt.Schema.LookUpField(oldName); f != nil {
+				oldName = f.DBName
+				field = f
+			}
 
-		if f := stmt.Schema.LookUpField(newName); f != nil {
-			newName = f.DBName
-			field = f
-		}
+			if f := stmt.Schema.LookUpField(newName); f != nil {
+				newName = f.DBName
+				field = f
+			}
 
-		if field != nil {
-			return m.DB.Exec(
-				"ALTER TABLE ? CHANGE ? ? ?",
-				clause.Table{Name: stmt.Table}, clause.Column{Name: oldName}, clause.Column{Name: newName}, m.FullDataTypeOf(field),
-			).Error
+			if field != nil {
+				return m.DB.Exec(
+					"ALTER TABLE ? CHANGE ? ? ?",
+					clause.Table{Name: stmt.Table}, clause.Column{Name: oldName}, clause.Column{Name: newName}, m.FullDataTypeOf(field),
+				).Error
+			}
+		} else {
+			return m.Migrator.RenameColumn(value, oldName, newName)
 		}
 
 		return fmt.Errorf("failed to look up field with name: %s", newName)
 	})
+}
+
+func (m Migrator) RenameIndex(value interface{}, oldName, newName string) error {
+	if m.Dialector.DontSupportRenameIndex {
+		return m.RunWithValue(value, func(stmt *gorm.Statement) error {
+			err := m.DropIndex(value, oldName)
+			if err == nil {
+				if idx := stmt.Schema.LookIndex(newName); idx == nil {
+					if idx = stmt.Schema.LookIndex(oldName); idx != nil {
+						opts := m.BuildIndexOptions(idx.Fields, stmt)
+						values := []interface{}{clause.Column{Name: newName}, clause.Table{Name: stmt.Table}, opts}
+
+						createIndexSQL := "CREATE "
+						if idx.Class != "" {
+							createIndexSQL += idx.Class + " "
+						}
+						createIndexSQL += "INDEX ? ON ??"
+
+						if idx.Type != "" {
+							createIndexSQL += " USING " + idx.Type
+						}
+
+						return m.DB.Exec(createIndexSQL, values...).Error
+					}
+				}
+
+				err = m.CreateIndex(value, newName)
+			}
+
+			return err
+		})
+	} else {
+		return m.RunWithValue(value, func(stmt *gorm.Statement) error {
+			return m.DB.Exec(
+				"ALTER TABLE ? RENAME INDEX ? TO ?",
+				clause.Table{Name: stmt.Table}, clause.Column{Name: oldName}, clause.Column{Name: newName},
+			).Error
+		})
+	}
 }
 
 func (m Migrator) DropTable(values ...interface{}) error {

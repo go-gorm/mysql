@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
@@ -15,21 +16,24 @@ import (
 )
 
 type Config struct {
-	DSN                      string
-	DisableDatetimePrecision bool
-	DefaultStringSize        uint
+	DSN                       string
+	SkipInitializeWithVersion bool
+	DefaultStringSize         uint
+	DisableDatetimePrecision  bool
+	DontSupportRenameIndex    bool
+	DontSupportRenameColumn   bool
 }
 
 type Dialector struct {
-	Config
+	*Config
 }
 
 func Open(dsn string) gorm.Dialector {
-	return &Dialector{Config: Config{DSN: dsn}}
+	return &Dialector{Config: &Config{DSN: dsn}}
 }
 
 func New(config Config) gorm.Dialector {
-	return &Dialector{Config: config}
+	return &Dialector{Config: &config}
 }
 
 func (dialector Dialector) Name() string {
@@ -40,6 +44,27 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{})
 	db.ConnPool, err = sql.Open("mysql", dialector.DSN)
+
+	if !dialector.Config.SkipInitializeWithVersion {
+		var version string
+		db.ConnPool.(*sql.DB).QueryRow("SELECT VERSION()").Scan(&version)
+
+		if strings.Contains(version, "MariaDB") {
+			dialector.Config.DontSupportRenameIndex = true
+			dialector.Config.DontSupportRenameColumn = true
+		} else if strings.HasPrefix(version, "5.6.") {
+			dialector.Config.DontSupportRenameIndex = true
+			dialector.Config.DontSupportRenameColumn = true
+		} else if strings.HasPrefix(version, "5.7.") {
+			dialector.Config.DontSupportRenameColumn = true
+		} else if strings.HasPrefix(version, "5.") {
+			dialector.Config.DisableDatetimePrecision = true
+			dialector.Config.DontSupportRenameIndex = true
+			dialector.Config.DontSupportRenameColumn = true
+		}
+
+		fmt.Printf("%#v \n", dialector.Config)
+	}
 
 	for k, v := range dialector.ClauseBuilders() {
 		db.ClauseBuilders[k] = v
@@ -104,10 +129,15 @@ func (dialector Dialector) DefaultValueOf(field *schema.Field) clause.Expression
 }
 
 func (dialector Dialector) Migrator(db *gorm.DB) gorm.Migrator {
-	return Migrator{migrator.Migrator{Config: migrator.Config{
-		DB:        db,
+	return Migrator{
+		Migrator: migrator.Migrator{
+			Config: migrator.Config{
+				DB:        db,
+				Dialector: dialector,
+			},
+		},
 		Dialector: dialector,
-	}}}
+	}
 }
 
 func (dialector Dialector) BindVarTo(writer clause.Writer, stmt *gorm.Statement, v interface{}) {
