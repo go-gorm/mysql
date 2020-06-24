@@ -35,6 +35,30 @@ func (m Migrator) AlterColumn(value interface{}, field string) error {
 	})
 }
 
+func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error {
+	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		var field *schema.Field
+		if f := stmt.Schema.LookUpField(oldName); f != nil {
+			oldName = f.DBName
+			field = f
+		}
+
+		if f := stmt.Schema.LookUpField(newName); f != nil {
+			newName = f.DBName
+			field = f
+		}
+
+		if field != nil {
+			return m.DB.Exec(
+				"ALTER TABLE ? CHANGE ? ? ?",
+				clause.Table{Name: stmt.Table}, clause.Column{Name: oldName}, clause.Column{Name: newName}, m.FullDataTypeOf(field),
+			).Error
+		}
+
+		return fmt.Errorf("failed to look up field with name: %s", newName)
+	})
+}
+
 func (m Migrator) DropTable(values ...interface{}) error {
 	values = m.ReorderModels(values, false)
 	tx := m.DB.Session(&gorm.Session{})
