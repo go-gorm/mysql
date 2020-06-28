@@ -17,6 +17,7 @@ import (
 
 type Config struct {
 	DSN                       string
+	Database                  *sql.DB
 	SkipInitializeWithVersion bool
 	DefaultStringSize         uint
 	DisableDatetimePrecision  bool
@@ -26,8 +27,6 @@ type Config struct {
 
 type Dialector struct {
 	*Config
-
-	db *sql.DB
 }
 
 func Open(dsn string) gorm.Dialector {
@@ -38,13 +37,6 @@ func New(config Config) gorm.Dialector {
 	return &Dialector{Config: &config}
 }
 
-func NewWithDB(db *sql.DB) gorm.Dialector {
-	return &Dialector{
-		Config: &Config{},
-		db:     db,
-	}
-}
-
 func (dialector Dialector) Name() string {
 	return "mysql"
 }
@@ -53,8 +45,8 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{})
 
-	if dialector.db != nil {
-		db.ConnPool = dialector.db
+	if dialector.Database != nil {
+		db.ConnPool = dialector.Database
 	} else {
 		db.ConnPool, err = sql.Open("mysql", dialector.DSN)
 	}
