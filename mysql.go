@@ -90,13 +90,13 @@ func (dialector Dialector) ClauseBuilders() map[string]clause.ClauseBuilder {
 
 						if s.PrioritizedPrimaryField != nil {
 							column = clause.Column{Name: s.PrioritizedPrimaryField.DBName}
-						} else {
-							for _, field := range s.FieldsByDBName {
-								column = clause.Column{Name: field.DBName}
-								break
-							}
+						} else if len(s.DBNames) > 0 {
+							column = clause.Column{Name: s.DBNames[0]}
 						}
-						onConflict.DoUpdates = []clause.Assignment{{Column: column, Value: column}}
+
+						if column.Name != "" {
+							onConflict.DoUpdates = []clause.Assignment{{Column: column, Value: column}}
+						}
 					}
 				}
 
