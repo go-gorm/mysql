@@ -68,8 +68,6 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
 		}
-
-		fmt.Printf("%#v \n", dialector.Config)
 	}
 
 	for k, v := range dialector.ClauseBuilders() {
