@@ -189,7 +189,7 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 			sqlType += " unsigned"
 		}
 
-		if field.AutoIncrement || field == field.Schema.PrioritizedPrimaryField {
+		if field.AutoIncrement {
 			sqlType += " AUTO_INCREMENT"
 		}
 		return sqlType
