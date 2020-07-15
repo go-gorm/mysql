@@ -16,6 +16,7 @@ import (
 )
 
 type Config struct {
+	DriverName                string
 	DSN                       string
 	Conn                      *sql.DB
 	SkipInitializeWithVersion bool
@@ -45,10 +46,14 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{})
 
+	if dialector.DriverName == "" {
+		dialector.DriverName = "mysql"
+	}
+
 	if dialector.Conn != nil {
 		db.ConnPool = dialector.Conn
 	} else {
-		db.ConnPool, err = sql.Open("mysql", dialector.DSN)
+		db.ConnPool, err = sql.Open(dialector.DriverName, dialector.DSN)
 	}
 
 	if !dialector.Config.SkipInitializeWithVersion {
