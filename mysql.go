@@ -187,7 +187,7 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 	case schema.Bool:
 		return "boolean"
 	case schema.Int, schema.Uint:
-		sqlType := "int"
+		sqlType := "bigint"
 		switch {
 		case field.Size <= 8:
 			sqlType = "tinyint"
@@ -197,8 +197,6 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 			sqlType = "mediumint"
 		case field.Size <= 32:
 			sqlType = "int"
-		default:
-			sqlType = "bigint"
 		}
 
 		if field.DataType == schema.Uint {
