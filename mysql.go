@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"math"
@@ -18,7 +19,7 @@ import (
 type Config struct {
 	DriverName                string
 	DSN                       string
-	Conn                      *sql.DB
+	Conn                      gorm.ConnPool
 	SkipInitializeWithVersion bool
 	DefaultStringSize         uint
 	DisableDatetimePrecision  bool
@@ -43,6 +44,8 @@ func (dialector Dialector) Name() string {
 }
 
 func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
+	ctx := context.Background()
+
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{})
 
@@ -54,11 +57,17 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 		db.ConnPool = dialector.Conn
 	} else {
 		db.ConnPool, err = sql.Open(dialector.DriverName, dialector.DSN)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !dialector.Config.SkipInitializeWithVersion {
 		var version string
-		db.ConnPool.(*sql.DB).QueryRow("SELECT VERSION()").Scan(&version)
+		err = db.ConnPool.QueryRowContext(ctx, "SELECT VERSION()").Scan(&version)
+		if err != nil {
+			return err
+		}
 
 		if strings.Contains(version, "MariaDB") {
 			dialector.Config.DontSupportRenameIndex = true
