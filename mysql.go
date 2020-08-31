@@ -49,6 +49,8 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{})
 
+	db.Callback().Update().Replace("gorm:update", Update)
+
 	if dialector.DriverName == "" {
 		dialector.DriverName = "mysql"
 	}
