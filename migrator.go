@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"database/sql"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -12,6 +13,52 @@ import (
 type Migrator struct {
 	migrator.Migrator
 	Dialector
+}
+
+type Column struct {
+	name      string
+	nullable  sql.NullString
+	datatype  string
+	maxlen    sql.NullInt64
+	precision sql.NullInt64
+	scale     sql.NullInt64
+}
+
+func (c Column) Name() string {
+	return c.name
+}
+
+func (c Column) DatabaseTypeName() string {
+	return c.datatype
+}
+
+func (c Column) Length() (length int64, ok bool) {
+	ok = c.maxlen.Valid
+	if ok {
+		length = c.maxlen.Int64
+	} else {
+		length = 0
+	}
+	return
+}
+
+func (c Column) Nullable() (nullable bool, ok bool) {
+	if c.nullable.Valid {
+		nullable, ok = c.nullable.String == "YES", true
+	} else {
+		nullable, ok = false, false
+	}
+	return
+}
+
+func (c Column) DecimalSize() (precision int64, scale int64, ok bool) {
+	ok = c.precision.Valid && c.scale.Valid
+	if ok {
+		precision, scale = c.precision.Int64, c.scale.Int64
+	} else {
+		precision, scale = 0, 0
+	}
+	return
 }
 
 func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
@@ -134,4 +181,44 @@ func (m Migrator) DropConstraint(value interface{}, name string) error {
 			clause.Table{Name: stmt.Table}, clause.Column{Name: name},
 		).Error
 	})
+}
+
+func (m Migrator) ColumnTypes(value interface{}) (columnTypes []Column, err error) {
+	columnTypes = make([]Column, 0)
+	err = m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		columns, err := m.DB.Raw(
+			"SELECT column_name, is_nullable, data_type, character_maximum_length, "+
+				"numeric_precision, numeric_scale "+
+				"FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = ?", stmt.Table).Rows()
+		if err != nil {
+			return err
+		}
+		defer columns.Close()
+
+		for columns.Next() {
+			var (
+				name      string
+				nullable  sql.NullString
+				datatype  string
+				maxlen    sql.NullInt64
+				precision sql.NullInt64
+				scale     sql.NullInt64
+			)
+			err = columns.Scan(&name, &nullable, &datatype, &maxlen, &precision, &scale)
+			if err != nil {
+				return err
+			}
+			columnTypes = append(columnTypes, Column{
+				name:      name,
+				nullable:  nullable,
+				datatype:  datatype,
+				maxlen:    maxlen,
+				precision: precision,
+				scale:     scale,
+			})
+		}
+
+		return err
+	})
+	return
 }
