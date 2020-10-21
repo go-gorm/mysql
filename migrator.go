@@ -191,33 +191,26 @@ func (m Migrator) ColumnTypes(value interface{}) (columnTypes []gorm.ColumnType,
 			"SELECT column_name, is_nullable, data_type, character_maximum_length, "+
 				"numeric_precision, numeric_scale "+
 				"FROM information_schema.columns WHERE table_schema = ? AND table_name = ?",
-				currentDatabase, stmt.Table).Rows()
+			currentDatabase, stmt.Table).Rows()
 		if err != nil {
 			return err
 		}
 		defer columns.Close()
 
 		for columns.Next() {
-			var (
-				name      string
-				nullable  sql.NullString
-				datatype  string
-				maxlen    sql.NullInt64
-				precision sql.NullInt64
-				scale     sql.NullInt64
+			var column Column
+			err = columns.Scan(
+				&column.name,
+				&column.nullable,
+				&column.datatype,
+				&column.maxlen,
+				&column.precision,
+				&column.scale,
 			)
-			err = columns.Scan(&name, &nullable, &datatype, &maxlen, &precision, &scale)
 			if err != nil {
 				return err
 			}
-			columnTypes = append(columnTypes, Column{
-				name:      name,
-				nullable:  nullable,
-				datatype:  datatype,
-				maxlen:    maxlen,
-				precision: precision,
-				scale:     scale,
-			})
+			columnTypes = append(columnTypes, column)
 		}
 
 		return err
