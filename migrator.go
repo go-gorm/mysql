@@ -53,10 +53,14 @@ func (c Column) Nullable() (nullable bool, ok bool) {
 }
 
 func (c Column) DecimalSize() (precision int64, scale int64, ok bool) {
-	if ok = c.precision.Valid && c.scale.Valid; ok {
-		precision, scale = c.precision.Int64, c.scale.Int64
-	} else if ok = c.datetimeprecision.Valid; ok {
-		precision, scale = c.datetimeprecision.Int64, 0
+	if c.precision.Valid {
+		if c.scale.Valid {
+			precision, scale, ok = c.precision.Int64, c.scale.Int64, true
+		} else {
+			precision, scale, ok = c.precision.Int64, 0, true
+		}
+	} else if c.datetimeprecision.Valid {
+		precision, scale, ok = c.datetimeprecision.Int64, 0, true
 	} else {
 		precision, scale, ok = 0, 0, false
 	}
