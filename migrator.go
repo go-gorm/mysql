@@ -16,12 +16,13 @@ type Migrator struct {
 }
 
 type Column struct {
-	name      string
-	nullable  sql.NullString
-	datatype  string
-	maxlen    sql.NullInt64
-	precision sql.NullInt64
-	scale     sql.NullInt64
+	name              string
+	nullable          sql.NullString
+	datatype          string
+	maxlen            sql.NullInt64
+	precision         sql.NullInt64
+	scale             sql.NullInt64
+	datetimeprecision sql.NullInt64
 }
 
 func (c Column) Name() string {
@@ -52,11 +53,12 @@ func (c Column) Nullable() (nullable bool, ok bool) {
 }
 
 func (c Column) DecimalSize() (precision int64, scale int64, ok bool) {
-	ok = c.precision.Valid && c.scale.Valid
-	if ok {
+	if ok = c.precision.Valid && c.scale.Valid; ok {
 		precision, scale = c.precision.Int64, c.scale.Int64
+	} else if ok = c.datetimeprecision.Valid; ok {
+		precision, scale = c.datetimeprecision.Int64, 0
 	} else {
-		precision, scale = 0, 0
+		precision, scale, ok = 0, 0, false
 	}
 	return
 }
@@ -189,7 +191,7 @@ func (m Migrator) ColumnTypes(value interface{}) (columnTypes []gorm.ColumnType,
 		currentDatabase := m.DB.Migrator().CurrentDatabase()
 		columns, err := m.DB.Raw(
 			"SELECT column_name, is_nullable, data_type, character_maximum_length, "+
-				"numeric_precision, numeric_scale "+
+				"numeric_precision, numeric_scale, datetime_precision "+
 				"FROM information_schema.columns WHERE table_schema = ? AND table_name = ?",
 			currentDatabase, stmt.Table).Rows()
 		if err != nil {
@@ -206,6 +208,7 @@ func (m Migrator) ColumnTypes(value interface{}) (columnTypes []gorm.ColumnType,
 				&column.maxlen,
 				&column.precision,
 				&column.scale,
+				&column.datetimeprecision,
 			)
 			if err != nil {
 				return err
