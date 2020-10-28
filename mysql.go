@@ -22,6 +22,7 @@ type Config struct {
 	Conn                      gorm.ConnPool
 	SkipInitializeWithVersion bool
 	DefaultStringSize         uint
+	DefaultDatetimePrecision  *int
 	DisableDatetimePrecision  bool
 	DontSupportRenameIndex    bool
 	DontSupportRenameColumn   bool
@@ -54,6 +55,11 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 
 	if dialector.DriverName == "" {
 		dialector.DriverName = "mysql"
+	}
+
+	if dialector.DefaultDatetimePrecision == nil {
+		var defaultDatetimePrecision = 3
+		dialector.DefaultDatetimePrecision = &defaultDatetimePrecision
 	}
 
 	if dialector.Conn != nil {
@@ -260,14 +266,12 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 	case schema.Time:
 		precision := ""
 
-		if !dialector.DisableDatetimePrecision {
-			if field.Precision == 0 {
-				field.Precision = 3
-			}
+		if !dialector.DisableDatetimePrecision && field.Precision == 0 {
+			field.Precision = *dialector.DefaultDatetimePrecision
+		}
 
-			if field.Precision > 0 {
-				precision = fmt.Sprintf("(%d)", field.Precision)
-			}
+		if field.Precision > 0 {
+			precision = fmt.Sprintf("(%d)", field.Precision)
 		}
 
 		if field.NotNull || field.PrimaryKey {

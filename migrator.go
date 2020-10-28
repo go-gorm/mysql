@@ -192,12 +192,17 @@ func (m Migrator) DropConstraint(value interface{}, name string) error {
 func (m Migrator) ColumnTypes(value interface{}) (columnTypes []gorm.ColumnType, err error) {
 	columnTypes = make([]gorm.ColumnType, 0)
 	err = m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		currentDatabase := m.DB.Migrator().CurrentDatabase()
-		columns, err := m.DB.Raw(
-			"SELECT column_name, is_nullable, data_type, character_maximum_length, "+
-				"numeric_precision, numeric_scale, datetime_precision "+
-				"FROM information_schema.columns WHERE table_schema = ? AND table_name = ?",
-			currentDatabase, stmt.Table).Rows()
+		var (
+			currentDatabase = m.DB.Migrator().CurrentDatabase()
+			columnTypeSQL   = "SELECT column_name, is_nullable, data_type, character_maximum_length, numeric_precision, numeric_scale "
+		)
+
+		if !m.DisableDatetimePrecision {
+			columnTypeSQL += ", datetime_precision "
+		}
+		columnTypeSQL += "FROM information_schema.columns WHERE table_schema = ? AND table_name = ?"
+
+		columns, err := m.DB.Raw(columnTypeSQL, currentDatabase, stmt.Table).Rows()
 		if err != nil {
 			return err
 		}
@@ -205,16 +210,13 @@ func (m Migrator) ColumnTypes(value interface{}) (columnTypes []gorm.ColumnType,
 
 		for columns.Next() {
 			var column Column
-			err = columns.Scan(
-				&column.name,
-				&column.nullable,
-				&column.datatype,
-				&column.maxlen,
-				&column.precision,
-				&column.scale,
-				&column.datetimeprecision,
-			)
-			if err != nil {
+			var values = []interface{}{&column.name, &column.nullable, &column.datatype, &column.maxlen, &column.precision, &column.scale}
+
+			if !m.DisableDatetimePrecision {
+				values = append(values, &column.datetimeprecision)
+			}
+
+			if err = columns.Scan(values...); err != nil {
 				return err
 			}
 			columnTypes = append(columnTypes, column)
