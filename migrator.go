@@ -173,18 +173,16 @@ func (m Migrator) DropTable(values ...interface{}) error {
 
 func (m Migrator) DropConstraint(value interface{}, name string) error {
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		for _, chk := range stmt.Schema.ParseCheckConstraints() {
-			if chk.Name == name {
-				return m.DB.Exec(
-					"ALTER TABLE ? DROP CHECK ?",
-					clause.Table{Name: stmt.Table}, clause.Column{Name: name},
-				).Error
-			}
+		constraint, chk, table := m.GuessConstraintAndTable(stmt, name)
+		if chk != nil {
+			return m.DB.Exec("ALTER TABLE ? DROP CHECK ?", clause.Table{Name: stmt.Table}, clause.Column{Name: chk.Name}).Error
+		}
+		if constraint != nil {
+			name = constraint.Name
 		}
 
 		return m.DB.Exec(
-			"ALTER TABLE ? DROP FOREIGN KEY ?",
-			clause.Table{Name: stmt.Table}, clause.Column{Name: name},
+			"ALTER TABLE ? DROP FOREIGN KEY ?", clause.Table{Name: table}, clause.Column{Name: name},
 		).Error
 	})
 }
