@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
@@ -43,6 +44,19 @@ func New(config Config) gorm.Dialector {
 
 func (dialector Dialector) Name() string {
 	return "mysql"
+}
+
+func (dialector Dialector) Apply(config *gorm.Config) error {
+	if config.NowFunc == nil {
+		if dialector.DefaultDatetimePrecision == nil {
+			var defaultDatetimePrecision = 3
+			dialector.DefaultDatetimePrecision = &defaultDatetimePrecision
+		}
+
+		round := time.Second / time.Duration(math.Pow10(*dialector.DefaultDatetimePrecision))
+		config.NowFunc = func() time.Time { return time.Now().Local().Round(round) }
+	}
+	return nil
 }
 
 func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
