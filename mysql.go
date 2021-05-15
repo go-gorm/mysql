@@ -65,7 +65,7 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{
 		UpdateClauses: []string{"UPDATE", "SET", "WHERE", "ORDER BY", "LIMIT"},
-		DeleteClauses: []string{"DELETE", "FROM", "WHERE", "LIMIT"},
+		DeleteClauses: []string{"DELETE", "FROM", "WHERE", "ORDER BY", "LIMIT"},
 	})
 
 	if dialector.DriverName == "" {
