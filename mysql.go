@@ -203,9 +203,22 @@ func (dialector Dialector) BindVarTo(writer clause.Writer, stmt *gorm.Statement,
 }
 
 func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
+	if str == "*" {
+		writer.WriteString(str)
+		return
+	}
+
 	writer.WriteByte('`')
 	if strings.Contains(str, ".") {
 		for idx, str := range strings.Split(str, ".") {
+			if str == "*" {
+				if idx > 0 {
+					writer.WriteString(".")
+				}
+				writer.WriteString(str)
+				continue
+			}
+
 			if idx > 0 {
 				writer.WriteString(".`")
 			}
