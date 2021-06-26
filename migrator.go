@@ -57,7 +57,9 @@ func (c Column) DecimalSize() (int64, int64, bool) {
 		}
 
 		return c.precision.Int64, 0, true
-	} else if c.datetimePrecision.Valid {
+	}
+
+	if c.datetimePrecision.Valid {
 		return c.datetimePrecision.Int64, 0, true
 	}
 
