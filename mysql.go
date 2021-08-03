@@ -222,13 +222,20 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 			if idx > 0 {
 				writer.WriteString(".`")
 			}
-			writer.WriteString(str)
+			writer.WriteString(escapeBacktick(str))
 			writer.WriteByte('`')
 		}
 	} else {
-		writer.WriteString(str)
+		writer.WriteString(escapeBacktick(str))
 		writer.WriteByte('`')
 	}
+}
+
+func escapeBacktick(str string) string {
+	if strings.Contains(str, "`") {
+		return strings.ReplaceAll(str, "`", "``")
+	}
+	return str
 }
 
 func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
