@@ -203,32 +203,55 @@ func (dialector Dialector) BindVarTo(writer clause.Writer, stmt *gorm.Statement,
 }
 
 func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
-	if str == "*" {
-		writer.WriteString(str)
-		return
-	}
+	var (
+		unfinishedBacktick int
+		continuousBacktick int
+		shiftDelimiter     int
+		selfQuoted         = 0
+	)
 
-	writer.WriteByte('`')
-	if strings.Contains(str, ".") {
-		for idx, str := range strings.Split(str, ".") {
-			if str == "*" {
-				if idx > 0 {
-					writer.WriteString(".")
+	for _, v := range []byte(str) {
+		switch v {
+		case '`':
+			continuousBacktick++
+			if continuousBacktick == 2 {
+				writer.WriteString("``")
+				continuousBacktick = 0
+			}
+		case '.':
+			shiftDelimiter = 0
+			if continuousBacktick > 0 || selfQuoted == 0 {
+				unfinishedBacktick = 0
+				continuousBacktick = 0
+				writer.WriteString("`")
+			}
+			writer.WriteByte(v)
+			continue
+		default:
+			if shiftDelimiter-continuousBacktick <= 0 && unfinishedBacktick == 0 {
+				writer.WriteByte('`')
+				unfinishedBacktick = 1
+				if continuousBacktick > 0 {
+					continuousBacktick -= 1
+					selfQuoted = 1
+				} else {
+					selfQuoted = 0
 				}
-				writer.WriteString(str)
-				continue
 			}
 
-			if idx > 0 {
-				writer.WriteString(".`")
+			for ; continuousBacktick > 0; continuousBacktick -= 1 {
+				writer.WriteString("``")
 			}
-			writer.WriteString(str)
-			writer.WriteByte('`')
+
+			writer.WriteByte(v)
 		}
-	} else {
-		writer.WriteString(str)
-		writer.WriteByte('`')
+		shiftDelimiter++
 	}
+
+	for ; continuousBacktick > selfQuoted; continuousBacktick -= 2 {
+		writer.WriteString("``")
+	}
+	writer.WriteString("`")
 }
 
 func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
