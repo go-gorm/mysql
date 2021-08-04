@@ -43,11 +43,11 @@ func TestDialector_QuoteTo(t *testing.T) {
 // goarch: amd64
 // pkg: gorm.io/driver/mysql
 // cpu: Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz
-// BenchmarkDialector_QuoteTo               6298825               179.7 ns/op
-// BenchmarkDialector_QuoteTo-2             6729696               173.1 ns/op
-// BenchmarkDialector_QuoteTo-4             6804223               173.9 ns/op
-// BenchmarkDialector_QuoteTo-8             6885795               173.9 ns/op
-// BenchmarkDialector_QuoteTo-12            6879357               174.7 ns/op
+// BenchmarkDialector_QuoteTo               9184232               113.2 ns/op
+// BenchmarkDialector_QuoteTo-2             9782818               112.3 ns/op
+// BenchmarkDialector_QuoteTo-4            10726722               109.0 ns/op
+// BenchmarkDialector_QuoteTo-8             9656778               113.1 ns/op
+// BenchmarkDialector_QuoteTo-12           10729615               112.7 ns/op
 func BenchmarkDialector_QuoteTo(b *testing.B) {
 	dailor := Open("")
 	buf := &bytes.Buffer{}
