@@ -12,6 +12,19 @@ func TestDialector_QuoteTo(t *testing.T) {
 	}{
 		{"datadase.tableUser", "`datadase`.`tableUser`"},
 		{"datadase.table`User", "`datadase`.`table``User`"},
+		{"`a`.`b`", "`a`.`b`"},
+		{"`a`.b`", "`a`.`b```"},
+		{"a.`b`", "`a`.`b`"},
+		{"`a`.b`c", "`a`.`b``c`"},
+		{"`a`.`b`c`", "`a`.`b``c`"},
+		{"`a`.b", "`a`.`b`"},
+		{"`ab`", "`ab`"},
+		{"`a``b`", "`a``b`"},
+		{"`a```b`", "`a````b`"},
+		{"a`b", "`a``b`"},
+		{"ab", "`ab`"},
+		{"`a.b`", "`a.b`"},
+		{"a.b", "`a`.`b`"},
 	}
 
 	dailor := Open("")
