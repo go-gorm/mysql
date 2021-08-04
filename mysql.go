@@ -204,10 +204,9 @@ func (dialector Dialector) BindVarTo(writer clause.Writer, stmt *gorm.Statement,
 
 func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 	var (
-		unfinishedBacktick int
-		continuousBacktick int
-		shiftDelimiter     int
-		selfQuoted         = 0
+		underQuoted, selfQuoted bool
+		continuousBacktick      int8
+		shiftDelimiter          int8
 	)
 
 	for _, v := range []byte(str) {
@@ -219,23 +218,20 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 				continuousBacktick = 0
 			}
 		case '.':
-			shiftDelimiter = 0
-			if continuousBacktick > 0 || selfQuoted == 0 {
-				unfinishedBacktick = 0
+			if continuousBacktick > 0 || !selfQuoted {
+				shiftDelimiter = 0
+				underQuoted = false
 				continuousBacktick = 0
 				writer.WriteString("`")
 			}
 			writer.WriteByte(v)
 			continue
 		default:
-			if shiftDelimiter-continuousBacktick <= 0 && unfinishedBacktick == 0 {
+			if shiftDelimiter-continuousBacktick <= 0 && !underQuoted {
 				writer.WriteByte('`')
-				unfinishedBacktick = 1
-				if continuousBacktick > 0 {
+				underQuoted = true
+				if selfQuoted = continuousBacktick > 0; selfQuoted {
 					continuousBacktick -= 1
-					selfQuoted = 1
-				} else {
-					selfQuoted = 0
 				}
 			}
 
@@ -248,7 +244,7 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 		shiftDelimiter++
 	}
 
-	for ; continuousBacktick > selfQuoted; continuousBacktick -= 2 {
+	if continuousBacktick > 0 && !selfQuoted {
 		writer.WriteString("``")
 	}
 	writer.WriteString("`")
