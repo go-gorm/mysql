@@ -35,9 +35,11 @@ type Dialector struct {
 }
 
 var (
-	// UpdateClauses update clauses setting
+	// CreateClauses create clauses
+	CreateClauses = []string{"INSERT", "VALUES", "ON CONFLICT"}
+	// UpdateClauses update clauses
 	UpdateClauses = []string{"UPDATE", "SET", "WHERE", "ORDER BY", "LIMIT"}
-	// DeleteClauses delete clauses setting
+	// DeleteClauses delete clauses
 	DeleteClauses = []string{"DELETE", "FROM", "WHERE", "ORDER BY", "LIMIT"}
 
 	defaultDatetimePrecision = 3
@@ -82,6 +84,7 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 
 	// register callbacks
 	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{
+		CreateClauses: CreateClauses,
 		UpdateClauses: UpdateClauses,
 		DeleteClauses: DeleteClauses,
 	})
