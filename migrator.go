@@ -66,6 +66,11 @@ func (c Column) DecimalSize() (int64, int64, bool) {
 	return 0, 0, false
 }
 
+func (m Migrator) GetTables() (tableList []string, err error) {
+	return tableList, m.DB.Raw("SELECT TABLE_NAME FROM information_schema.tables where TABLE_SCHEMA=?", m.CurrentDatabase()).Scan(&tableList).Error
+}
+
+
 func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
 	expr := m.Migrator.FullDataTypeOf(field)
 
