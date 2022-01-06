@@ -200,7 +200,7 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 		if !m.DisableDatetimePrecision {
 			columnTypeSQL += ", datetime_precision "
 		}
-		columnTypeSQL += "FROM information_schema.columns WHERE table_schema = ? AND table_name = ?"
+		columnTypeSQL += "FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ORDER BY ORDINAL_POSITION"
 
 		columns, rowErr := m.DB.Raw(columnTypeSQL, currentDatabase, stmt.Table).Rows()
 		if rowErr != nil {
