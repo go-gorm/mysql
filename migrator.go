@@ -202,6 +202,8 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 				column.AutoIncrementValue = sql.NullBool{Bool: true, Valid: true}
 			}
 
+			column.DefaultValueValue.String = strings.Trim(column.DefaultValueValue.String, "'")
+
 			if datetimePrecision.Valid {
 				column.DecimalSizeValue = datetimePrecision
 			}
