@@ -189,9 +189,11 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 				return scanErr
 			}
 
+			column.PrimaryKeyValue = sql.NullBool{Bool: false, Valid: true}
+			column.UniqueValue = sql.NullBool{Bool: false, Valid: true}
 			switch columnKey.String {
 			case "PRI":
-				column.PrimayKeyValue = sql.NullBool{Bool: true, Valid: true}
+				column.PrimaryKeyValue = sql.NullBool{Bool: true, Valid: true}
 			case "UNI":
 				column.UniqueValue = sql.NullBool{Bool: true, Valid: true}
 			}
