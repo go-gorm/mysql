@@ -152,11 +152,11 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 			return err
 		}
 
-		defer func() {
-			err = rows.Close()
-		}()
-
 		rawColumnTypes, err := rows.ColumnTypes()
+
+		if err := rows.Close(); err != nil {
+			return err
+		}
 
 		if !m.DisableDatetimePrecision {
 			columnTypeSQL += ", datetime_precision "
