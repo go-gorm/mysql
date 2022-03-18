@@ -256,7 +256,7 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 				shiftDelimiter = 0
 				underQuoted = false
 				continuousBacktick = 0
-				writer.WriteString("`")
+				writer.WriteByte('`')
 			}
 			writer.WriteByte(v)
 			continue
@@ -281,7 +281,7 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 	if continuousBacktick > 0 && !selfQuoted {
 		writer.WriteString("``")
 	}
-	writer.WriteString("`")
+	writer.WriteByte('`')
 }
 
 func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
