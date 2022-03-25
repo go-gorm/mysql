@@ -64,7 +64,7 @@ func (dialector Dialector) Name() string {
 func (dialector Dialector) NowFunc(n int) func() time.Time {
 	return func() time.Time {
 		round := time.Second / time.Duration(math.Pow10(n))
-		return time.Now().Local().Round(round)
+		return time.Now().Round(round)
 	}
 }
 
