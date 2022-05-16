@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/migrator"
 	"gorm.io/gorm/schema"
+	"gorm.io/hints"
 )
 
 type Migrator struct {
@@ -145,7 +146,7 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 		var (
 			currentDatabase = m.DB.Migrator().CurrentDatabase()
 			columnTypeSQL   = "SELECT column_name, column_default, is_nullable = 'YES', data_type, character_maximum_length, column_type, column_key, extra, column_comment, numeric_precision, numeric_scale "
-			rows, err       = m.DB.Session(&gorm.Session{}).Table(stmt.Table).Limit(1).Rows()
+			rows, err       = m.DB.Session(&gorm.Session{}).Table(stmt.Table).Clauses(hints.CommentBefore("where", fmt.Sprintf("table_name=%s, shard_key=0", stmt.Table))).Where("1=1").Limit(1).Rows()
 		)
 
 		if err != nil {
