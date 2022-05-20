@@ -110,12 +110,11 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 		}
 	}
 
+	err = db.ConnPool.QueryRowContext(ctx, "SELECT VERSION()").Scan(&dialector.ServerVersion)
+	if err != nil {
+		return err
+	}
 	if !dialector.Config.SkipInitializeWithVersion {
-		err = db.ConnPool.QueryRowContext(ctx, "SELECT VERSION()").Scan(&dialector.ServerVersion)
-		if err != nil {
-			return err
-		}
-
 		if strings.Contains(dialector.ServerVersion, "MariaDB") {
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
