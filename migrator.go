@@ -203,7 +203,7 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 			}
 
 			column.DefaultValueValue.String = strings.Trim(column.DefaultValueValue.String, "'")
-			if strings.Contains(m.Dialector.ServerVersion, "MariaDB") {
+			if !m.Dialector.DontSupportUnifiedColumnDefalutValue {
 				// rewrite mariadb default value like other version
 				if column.DefaultValueValue.Valid && column.DefaultValueValue.String == "NULL" {
 					column.DefaultValueValue.Valid = false

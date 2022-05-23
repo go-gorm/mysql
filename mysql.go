@@ -18,17 +18,18 @@ import (
 )
 
 type Config struct {
-	DriverName                string
-	ServerVersion             string
-	DSN                       string
-	Conn                      gorm.ConnPool
-	SkipInitializeWithVersion bool
-	DefaultStringSize         uint
-	DefaultDatetimePrecision  *int
-	DisableDatetimePrecision  bool
-	DontSupportRenameIndex    bool
-	DontSupportRenameColumn   bool
-	DontSupportForShareClause bool
+	DriverName                           string
+	ServerVersion                        string
+	DSN                                  string
+	Conn                                 gorm.ConnPool
+	SkipInitializeWithVersion            bool
+	DefaultStringSize                    uint
+	DefaultDatetimePrecision             *int
+	DisableDatetimePrecision             bool
+	DontSupportRenameIndex               bool
+	DontSupportRenameColumn              bool
+	DontSupportForShareClause            bool
+	DontSupportUnifiedColumnDefalutValue bool
 }
 
 type Dialector struct {
@@ -110,11 +111,12 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 		}
 	}
 
-	err = db.ConnPool.QueryRowContext(ctx, "SELECT VERSION()").Scan(&dialector.ServerVersion)
-	if err != nil {
-		return err
-	}
 	if !dialector.Config.SkipInitializeWithVersion {
+		err = db.ConnPool.QueryRowContext(ctx, "SELECT VERSION()").Scan(&dialector.ServerVersion)
+		if err != nil {
+			return err
+		}
+
 		if strings.Contains(dialector.ServerVersion, "MariaDB") {
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
@@ -123,14 +125,17 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
 			dialector.Config.DontSupportForShareClause = true
+			dialector.Config.DontSupportUnifiedColumnDefalutValue = true
 		} else if strings.HasPrefix(dialector.ServerVersion, "5.7.") {
 			dialector.Config.DontSupportRenameColumn = true
 			dialector.Config.DontSupportForShareClause = true
+			dialector.Config.DontSupportUnifiedColumnDefalutValue = true
 		} else if strings.HasPrefix(dialector.ServerVersion, "5.") {
 			dialector.Config.DisableDatetimePrecision = true
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
 			dialector.Config.DontSupportForShareClause = true
+			dialector.Config.DontSupportUnifiedColumnDefalutValue = true
 		}
 	}
 
