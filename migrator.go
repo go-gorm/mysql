@@ -244,3 +244,78 @@ func (m Migrator) GetTables() (tableList []string, err error) {
 		Scan(&tableList).Error
 	return
 }
+
+func (m Migrator) GetIndexes(value interface{}) ([]gorm.Index, error) {
+	indexes := make([]gorm.Index, 0)
+	err := m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		indexSql := `SELECT
+							TABLE_NAME,
+							COLUMN_NAME,
+							INDEX_NAME,
+							NON_UNIQUE 
+						FROM
+							information_schema.STATISTICS 
+						WHERE
+							TABLE_SCHEMA = ? 
+							AND TABLE_NAME =? 
+						ORDER BY
+							INDEX_NAME,
+							SEQ_IN_INDEX`
+		result := make([]*Index, 0)
+		scanErr := m.DB.Raw(indexSql, m.CurrentDatabase(), m).Scan(&result).Error
+		if scanErr != nil {
+			return scanErr
+		}
+		if len(result) == 0 {
+			return nil
+		}
+
+		indexMap := groupByIndexName(result)
+
+		for _, idx := range indexMap {
+			if len(idx) == 0 {
+				continue
+			}
+			tempIdx := &migrator.Index{
+				TableName: idx[0].TableName,
+				NameValue: idx[0].IndexName,
+				PrimaryKeyValue: sql.NullBool{
+					Bool:  idx[0].IndexName == "PRIMARY",
+					Valid: true,
+				},
+				UniqueValue: sql.NullBool{
+					Bool:  idx[0].NonUnique == 0,
+					Valid: true,
+				},
+			}
+			for _, x := range idx {
+				tempIdx.ColumnList = append(tempIdx.ColumnList, x.ColumnName)
+			}
+			indexes = append(indexes, tempIdx)
+		}
+		return nil
+	})
+	return indexes, err
+}
+
+// Index table index info
+type Index struct {
+	TableName  string `gorm:"column:TABLE_NAME"`
+	ColumnName string `gorm:"column:COLUMN_NAME"`
+	IndexName  string `gorm:"column:INDEX_NAME"`
+	NonUnique  int32  `gorm:"column:NON_UNIQUE"`
+}
+
+func groupByIndexName(indexList []*Index) map[string][]*Index {
+	columnIndexMap := make(map[string][]*Index, len(indexList))
+	if len(indexList) == 0 {
+		return columnIndexMap
+	}
+	for _, idx := range indexList {
+		if idx == nil {
+			continue
+		}
+		columnIndexMap[idx.IndexName] = append(columnIndexMap[idx.IndexName], idx)
+	}
+	return columnIndexMap
+}
