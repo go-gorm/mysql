@@ -11,6 +11,21 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+const indexSql = `
+SELECT
+	TABLE_NAME,
+	COLUMN_NAME,
+	INDEX_NAME,
+	NON_UNIQUE 
+FROM
+	information_schema.STATISTICS 
+WHERE
+	TABLE_SCHEMA = ? 
+	AND TABLE_NAME = ? 
+ORDER BY
+	INDEX_NAME,
+	SEQ_IN_INDEX`
+
 type Migrator struct {
 	migrator.Migrator
 	Dialector
@@ -248,34 +263,22 @@ func (m Migrator) GetTables() (tableList []string, err error) {
 func (m Migrator) GetIndexes(value interface{}) ([]gorm.Index, error) {
 	indexes := make([]gorm.Index, 0)
 	err := m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		indexSql := `SELECT
-							TABLE_NAME,
-							COLUMN_NAME,
-							INDEX_NAME,
-							NON_UNIQUE 
-						FROM
-							information_schema.STATISTICS 
-						WHERE
-							TABLE_SCHEMA = ? 
-							AND TABLE_NAME =? 
-						ORDER BY
-							INDEX_NAME,
-							SEQ_IN_INDEX`
+
 		result := make([]*Index, 0)
-		scanErr := m.DB.Raw(indexSql, m.CurrentDatabase(), m).Scan(&result).Error
+		scanErr := m.DB.Raw(indexSql, m.CurrentDatabase(), stmt.Table).Scan(&result).Error
 		if scanErr != nil {
 			return scanErr
 		}
-		if len(result) == 0 {
-			return nil
-		}
+		//if len(result) == 0 {
+		//	return nil
+		//}
 
 		indexMap := groupByIndexName(result)
 
 		for _, idx := range indexMap {
-			if len(idx) == 0 {
-				continue
-			}
+			//if len(idx) == 0 {
+			//	continue
+			//}
 			tempIdx := &migrator.Index{
 				TableName: idx[0].TableName,
 				NameValue: idx[0].IndexName,
@@ -308,13 +311,13 @@ type Index struct {
 
 func groupByIndexName(indexList []*Index) map[string][]*Index {
 	columnIndexMap := make(map[string][]*Index, len(indexList))
-	if len(indexList) == 0 {
-		return columnIndexMap
-	}
+	//if len(indexList) == 0 {
+	//	return columnIndexMap
+	//}
 	for _, idx := range indexList {
-		if idx == nil {
-			continue
-		}
+		//if idx == nil {
+		//	continue
+		//}
 		columnIndexMap[idx.IndexName] = append(columnIndexMap[idx.IndexName], idx)
 	}
 	return columnIndexMap
