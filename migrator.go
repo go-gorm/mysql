@@ -272,7 +272,6 @@ func (m Migrator) GetIndexes(value interface{}) ([]gorm.Index, error) {
 		//if len(result) == 0 {
 		//	return nil
 		//}
-
 		indexMap := groupByIndexName(result)
 
 		for _, idx := range indexMap {
