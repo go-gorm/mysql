@@ -269,15 +269,9 @@ func (m Migrator) GetIndexes(value interface{}) ([]gorm.Index, error) {
 		if scanErr != nil {
 			return scanErr
 		}
-		//if len(result) == 0 {
-		//	return nil
-		//}
 		indexMap := groupByIndexName(result)
 
 		for _, idx := range indexMap {
-			//if len(idx) == 0 {
-			//	continue
-			//}
 			tempIdx := &migrator.Index{
 				TableName: idx[0].TableName,
 				NameValue: idx[0].IndexName,
@@ -310,13 +304,7 @@ type Index struct {
 
 func groupByIndexName(indexList []*Index) map[string][]*Index {
 	columnIndexMap := make(map[string][]*Index, len(indexList))
-	//if len(indexList) == 0 {
-	//	return columnIndexMap
-	//}
 	for _, idx := range indexList {
-		//if idx == nil {
-		//	continue
-		//}
 		columnIndexMap[idx.IndexName] = append(columnIndexMap[idx.IndexName], idx)
 	}
 	return columnIndexMap
