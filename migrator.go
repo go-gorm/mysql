@@ -158,9 +158,9 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 	columnTypes := make([]gorm.ColumnType, 0)
 	err := m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		var (
-			currentDatabase = m.DB.Migrator().CurrentDatabase()
-			columnTypeSQL   = "SELECT column_name, column_default, is_nullable = 'YES', data_type, character_maximum_length, column_type, column_key, extra, column_comment, numeric_precision, numeric_scale "
-			rows, err       = m.DB.Session(&gorm.Session{}).Table(stmt.Table).Limit(1).Rows()
+			currentDatabase, table = m.CurrentSchema(stmt, stmt.Table)
+			columnTypeSQL          = "SELECT column_name, column_default, is_nullable = 'YES', data_type, character_maximum_length, column_type, column_key, extra, column_comment, numeric_precision, numeric_scale "
+			rows, err              = m.DB.Session(&gorm.Session{}).Table(table).Limit(1).Rows()
 		)
 
 		if err != nil {
@@ -178,7 +178,7 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 		}
 		columnTypeSQL += "FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ORDER BY ORDINAL_POSITION"
 
-		columns, rowErr := m.DB.Raw(columnTypeSQL, currentDatabase, stmt.Table).Rows()
+		columns, rowErr := m.DB.Raw(columnTypeSQL, currentDatabase, table).Rows()
 		if rowErr != nil {
 			return rowErr
 		}
@@ -265,7 +265,8 @@ func (m Migrator) GetIndexes(value interface{}) ([]gorm.Index, error) {
 	err := m.RunWithValue(value, func(stmt *gorm.Statement) error {
 
 		result := make([]*Index, 0)
-		scanErr := m.DB.Raw(indexSql, m.CurrentDatabase(), stmt.Table).Scan(&result).Error
+		schema, table := m.CurrentSchema(stmt, stmt.Table)
+		scanErr := m.DB.Raw(indexSql, schema, table).Scan(&result).Error
 		if scanErr != nil {
 			return scanErr
 		}
@@ -308,4 +309,19 @@ func groupByIndexName(indexList []*Index) map[string][]*Index {
 		columnIndexMap[idx.IndexName] = append(columnIndexMap[idx.IndexName], idx)
 	}
 	return columnIndexMap
+}
+
+func (m Migrator) CurrentSchema(stmt *gorm.Statement, table string) (string, string) {
+	if strings.Contains(table, ".") {
+		if tables := strings.Split(table, `.`); len(tables) == 2 {
+			return tables[0], tables[1]
+		}
+	}
+
+	if stmt.TableExpr != nil {
+		if tables := strings.Split(stmt.TableExpr.SQL, `"."`); len(tables) == 2 {
+			return strings.TrimPrefix(tables[0], `"`), table
+		}
+	}
+	return m.CurrentDatabase(), table
 }
