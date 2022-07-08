@@ -318,10 +318,5 @@ func (m Migrator) CurrentSchema(stmt *gorm.Statement, table string) (string, str
 		}
 	}
 
-	if stmt.TableExpr != nil {
-		if tables := strings.Split(stmt.TableExpr.SQL, `"."`); len(tables) == 2 {
-			return strings.TrimPrefix(tables[0], `"`), table
-		}
-	}
 	return m.CurrentDatabase(), table
 }
