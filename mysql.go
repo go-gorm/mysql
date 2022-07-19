@@ -306,7 +306,11 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 		return dialector.getSchemaBytesType(field)
 	}
 
-	if field.AutoIncrement {
+	autoIncrement := field.AutoIncrement
+	if !autoIncrement {
+		_, autoIncrement = field.TagSettings["AUTO_INCREMENT"]
+	}
+	if autoIncrement {
 		return string(field.DataType) + " AUTO_INCREMENT"
 	}
 
