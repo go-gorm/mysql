@@ -307,25 +307,7 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 	}
 
 	if field.AutoIncrement {
-		sqlType := "bigint"
-		switch {
-		case field.Size <= 8:
-			sqlType = "tinyint"
-		case field.Size <= 16:
-			sqlType = "smallint"
-		case field.Size <= 24:
-			sqlType = "mediumint"
-		case field.Size <= 32:
-			sqlType = "int"
-		}
-
-		if field.GORMDataType == schema.Uint {
-			sqlType += " unsigned"
-		}
-
-		sqlType += " AUTO_INCREMENT"
-
-		return sqlType
+		return string(field.DataType) + " AUTO_INCREMENT"
 	}
 
 	return string(field.DataType)
