@@ -401,8 +401,10 @@ func (dialector Dialector) getSchemaIntAndUnitType(field *schema.Field) string {
 func (dialector Dialector) getSchemaCustomType(field *schema.Field) string {
 	sqlType := string(field.DataType)
 
-	if field.AutoIncrement {
-		sqlType += " AUTO_INCREMENT"
+	if !strings.Contains(strings.ToLower(sqlType), " auto_increment") {
+		if field.AutoIncrement {
+			sqlType += " AUTO_INCREMENT"
+		}
 	}
 
 	return sqlType
