@@ -304,9 +304,9 @@ func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 		return dialector.getSchemaTimeType(field)
 	case schema.Bytes:
 		return dialector.getSchemaBytesType(field)
+	default:
+		return dialector.getSchemaCustomType(field)
 	}
-
-	return string(field.DataType)
 }
 
 func (dialector Dialector) getSchemaFloatType(field *schema.Field) string {
@@ -392,6 +392,16 @@ func (dialector Dialector) getSchemaIntAndUnitType(field *schema.Field) string {
 	}
 
 	if field.AutoIncrement {
+		sqlType += " AUTO_INCREMENT"
+	}
+
+	return sqlType
+}
+
+func (dialector Dialector) getSchemaCustomType(field *schema.Field) string {
+	sqlType := string(field.DataType)
+
+	if field.AutoIncrement && !strings.Contains(strings.ToLower(sqlType), " auto_increment") {
 		sqlType += " AUTO_INCREMENT"
 	}
 
