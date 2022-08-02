@@ -30,6 +30,10 @@ type Config struct {
 	DontSupportRenameColumn       bool
 	DontSupportForShareClause     bool
 	DontSupportNullAsDefaultValue bool
+	MaxIdle                       int
+	MaxOpen                       int
+	MaxLifeTime                   time.Duration
+	MaxIdleTime                   time.Duration
 }
 
 type Dialector struct {
@@ -49,12 +53,43 @@ var (
 	defaultDatetimePrecision = 3
 )
 
-func Open(dsn string) gorm.Dialector {
-	return &Dialector{Config: &Config{DSN: dsn}}
+type Option func(dialector *Dialector)
+
+// SetMaxOpenConns
+func MaxOpen(i int) Option {
+	return func(dialector *Dialector) {
+		dialector.MaxOpen = i
+	}
 }
 
-func New(config Config) gorm.Dialector {
-	return &Dialector{Config: &config}
+func MaxIdle(i int) Option {
+	return func(dialector *Dialector) {
+		dialector.MaxIdle = i
+	}
+}
+
+func MaxLifetime(d time.Duration) Option {
+	return func(dialector *Dialector) {
+		dialector.MaxLifeTime = d
+	}
+}
+
+func MaxIdleTime(d time.Duration) Option {
+	return func(dialector *Dialector) {
+		dialector.MaxIdleTime = d
+	}
+}
+
+func Open(dsn string, opts ...Option) gorm.Dialector {
+	return New(Config{DSN: dsn}, opts...)
+}
+
+func New(config Config, opts ...Option) gorm.Dialector {
+	myDialector := &Dialector{Config: &config}
+	for _, opt := range opts {
+		opt(myDialector)
+	}
+	return myDialector
 }
 
 func (dialector Dialector) Name() string {
@@ -105,10 +140,23 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	if dialector.Conn != nil {
 		db.ConnPool = dialector.Conn
 	} else {
-		db.ConnPool, err = sql.Open(dialector.DriverName, dialector.DSN)
+		sqlDb, err := sql.Open(dialector.DriverName, dialector.DSN)
 		if err != nil {
 			return err
 		}
+		if dialector.MaxIdle > 0 {
+			sqlDb.SetMaxIdleConns(dialector.MaxIdle)
+		}
+		if dialector.MaxOpen > 0 {
+			sqlDb.SetMaxOpenConns(dialector.MaxOpen)
+		}
+		if dialector.MaxLifeTime > 0 {
+			sqlDb.SetConnMaxLifetime(dialector.MaxLifeTime)
+		}
+		if dialector.MaxIdleTime > 0 {
+			sqlDb.SetConnMaxIdleTime(dialector.MaxIdleTime)
+		}
+		db.ConnPool = sqlDb
 	}
 
 	if !dialector.Config.SkipInitializeWithVersion {
