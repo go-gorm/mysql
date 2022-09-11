@@ -293,7 +293,7 @@ func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
 func (dialector Dialector) DataTypeOf(field *schema.Field) string {
 	switch field.DataType {
 	case schema.Bool:
-		return "boolean"
+		return "tinyint"
 	case schema.Int, schema.Uint:
 		return dialector.getSchemaIntAndUnitType(field)
 	case schema.Float:
