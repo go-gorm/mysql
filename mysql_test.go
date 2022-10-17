@@ -58,3 +58,20 @@ func BenchmarkDialector_QuoteTo(b *testing.B) {
 		buf.Reset()
 	}
 }
+
+func TestCheckVersion(t *testing.T) {
+	versions := map[string]string{
+		"5.6.1":  "5.6",
+		"5.10.2": "5.6",
+		"5.10":   "5.6",
+		"10.6.26-MariaDB-1:10.4.26+maria~ubu2004": "10.6",
+		"10.6.26-MariaDB-1:10.4.26+maria~ubu2005": "10.6.3",
+		"10.4.26-MariaDB-1:10.4.26+maria~ubu2004": "5.6",
+	}
+
+	for k, v := range versions {
+		if !checkVersion(k, v) || checkVersion(v, k) {
+			t.Fatalf("returns %v when comparing %v, %v", checkVersion(k, v), k, v)
+		}
+	}
+}

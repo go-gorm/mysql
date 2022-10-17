@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -119,7 +121,9 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 			dialector.Config.DontSupportRenameColumn = true
 			dialector.Config.DontSupportForShareClause = true
 			dialector.Config.DontSupportNullAsDefaultValue = true
-			withReturning = true
+			if checkVersion(dialector.ServerVersion, "10.5") {
+				withReturning = true
+			}
 		} else if strings.HasPrefix(dialector.ServerVersion, "5.6.") {
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
@@ -453,4 +457,30 @@ func (dialector Dialector) SavePoint(tx *gorm.DB, name string) error {
 
 func (dialector Dialector) RollbackTo(tx *gorm.DB, name string) error {
 	return tx.Exec("ROLLBACK TO SAVEPOINT " + name).Error
+}
+
+var versionTrimerRegexp = regexp.MustCompile(`^(\d+).*$`)
+
+// checkVersion newer or equal returns true, old returns false
+func checkVersion(newVersion, oldVersion string) bool {
+	if newVersion == oldVersion {
+		return true
+	}
+
+	newVersions := strings.Split(newVersion, ".")
+	oldVersions := strings.Split(oldVersion, ".")
+	for idx, nv := range newVersions {
+		if len(oldVersions) <= idx {
+			return true
+		}
+
+		nvi, _ := strconv.Atoi(versionTrimerRegexp.ReplaceAllString(nv, "$1"))
+		ovi, _ := strconv.Atoi(versionTrimerRegexp.ReplaceAllString(oldVersions[idx], "$1"))
+		if nvi == ovi {
+			continue
+		}
+		return nvi > ovi
+	}
+
+	return false
 }
