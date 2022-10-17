@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
@@ -22,6 +22,7 @@ type Config struct {
 	DriverName                    string
 	ServerVersion                 string
 	DSN                           string
+	DSNConfig                     *mysql.Config
 	Conn                          gorm.ConnPool
 	SkipInitializeWithVersion     bool
 	DefaultStringSize             uint
@@ -52,7 +53,8 @@ var (
 )
 
 func Open(dsn string) gorm.Dialector {
-	return &Dialector{Config: &Config{DSN: dsn}}
+	dsnConf, _ := mysql.ParseDSN(dsn)
+	return &Dialector{Config: &Config{DSN: dsn, DSNConfig: dsnConf}}
 }
 
 func New(config Config) gorm.Dialector {
@@ -311,6 +313,19 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 }
 
 func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
+	if dialector.DSNConfig.Loc == time.Local {
+		for i, v := range vars {
+			switch v.(type) {
+			case time.Time:
+				vars[i] = v.(time.Time).In(time.Local)
+			case *time.Time:
+				if v.(*time.Time) != nil {
+					newValue := v.(*time.Time).In(time.Local)
+					vars[i] = &newValue
+				}
+			}
+		}
+	}
 	return logger.ExplainSQL(sql, nil, `'`, vars...)
 }
 
