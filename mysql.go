@@ -316,17 +316,20 @@ func (dialector Dialector) QuoteTo(writer clause.Writer, str string) {
 	writer.WriteByte('`')
 }
 
+type localTimeInterface interface {
+	In(loc *time.Location) time.Time
+}
+
 func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
-	if dialector.DSNConfig.Loc == time.Local {
+	if dialector.DSNConfig != nil && dialector.DSNConfig.Loc == time.Local {
 		for i, v := range vars {
-			switch v.(type) {
-			case time.Time:
-				vars[i] = v.(time.Time).In(time.Local)
-			case *time.Time:
-				if v.(*time.Time) != nil {
-					newValue := v.(*time.Time).In(time.Local)
-					vars[i] = &newValue
-				}
+			if p, ok := v.(localTimeInterface); ok {
+				func(i int, t localTimeInterface) {
+					defer func() {
+						recover()
+					}()
+					vars[i] = t.In(time.Local)
+				}(i, p)
 			}
 		}
 	}
