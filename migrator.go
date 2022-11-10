@@ -317,10 +317,8 @@ func groupByIndexName(indexList []*Index) map[string][]*Index {
 }
 
 func (m Migrator) CurrentSchema(stmt *gorm.Statement, table string) (string, string) {
-	if strings.Contains(table, ".") {
-		if tables := strings.Split(table, `.`); len(tables) == 2 {
-			return tables[0], tables[1]
-		}
+	if tables := strings.Split(table, `.`); len(tables) == 2 {
+		return tables[0], tables[1]
 	}
 
 	return m.CurrentDatabase(), table
