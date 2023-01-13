@@ -173,11 +173,11 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 		}
 
 		rawColumnTypes, err := rows.ColumnTypes()
-		
+
 		if err != nil {
 			return err
 		}
-		
+
 		if err := rows.Close(); err != nil {
 			return err
 		}
@@ -224,6 +224,8 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 
 			if strings.Contains(extraValue.String, "auto_increment") {
 				column.AutoIncrementValue = sql.NullBool{Bool: true, Valid: true}
+			} else if strings.Contains(extraValue.String, "auto_random") {
+				column.AutoRandomValue = sql.NullBool{Bool: true, Valid: true}
 			}
 
 			column.DefaultValueValue.String = strings.Trim(column.DefaultValueValue.String, "'")

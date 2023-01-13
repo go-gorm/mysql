@@ -427,7 +427,10 @@ func (dialector Dialector) getSchemaIntAndUnitType(field *schema.Field) string {
 		}
 		if field.AutoIncrement {
 			sqlType += " AUTO_INCREMENT"
+		} else if field.AutoRandom {
+			sqlType += " AUTO_RANDOM"
 		}
+
 		return sqlType
 	}
 
@@ -450,6 +453,8 @@ func (dialector Dialector) getSchemaCustomType(field *schema.Field) string {
 
 	if field.AutoIncrement && !strings.Contains(strings.ToLower(sqlType), " auto_increment") {
 		sqlType += " AUTO_INCREMENT"
+	} else if field.AutoRandom && !strings.Contains(strings.ToLower(sqlType), " auto_random") {
+		sqlType += " AUTO_RANDOM"
 	}
 
 	return sqlType
