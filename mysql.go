@@ -436,7 +436,12 @@ func autoRandomType(field *schema.Field) (bool, string) {
 		field.HasDefaultValue = false
 		field.DefaultValue = ""
 
-		return true, "bigint auto_random"
+		sqlType := "bigint"
+		if field.DataType == schema.Uint {
+			sqlType += " unsigned"
+		}
+		sqlType += " auto_random"
+		return true, sqlType
 	}
 
 	return false, ""
