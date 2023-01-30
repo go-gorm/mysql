@@ -433,7 +433,6 @@ func (dialector Dialector) getSchemaBytesType(field *schema.Field) string {
 func autoRandomType(field *schema.Field) (bool, string) {
 	if field.PrimaryKey && field.HasDefaultValue &&
 		strings.ToLower(strings.TrimSpace(field.DefaultValue)) == AutoRandomTag {
-		field.HasDefaultValue = false
 		field.DefaultValue = ""
 
 		sqlType := "bigint"
