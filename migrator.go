@@ -48,45 +48,13 @@ func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
 }
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
-	if isTiDB, _, _, _, err := m.TiDBVersion(); isTiDB && err == nil {
-		return m.AlterColumnForTiDB(value, field)
-	}
-
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
-			return m.DB.Exec(
-				"ALTER TABLE ? MODIFY COLUMN ? ?",
-				clause.Table{Name: stmt.Table}, clause.Column{Name: field.DBName}, m.FullDataTypeOf(field),
-			).Error
-		}
-		return fmt.Errorf("failed to look up field with name: %s", field)
-	})
-}
-
-func (m Migrator) AlterColumnForTiDB(value interface{}, field string) error {
-	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		if field := stmt.Schema.LookUpField(field); field != nil {
-			// TiDB can't change column constraint.
-			// Even it is unique to unique
-			var columnType gorm.ColumnType = nil
-			if columnSrcTypes, err := m.ColumnTypes(stmt.Schema.Table); err == nil {
-				for _, columnSrcType := range columnSrcTypes {
-					if columnSrcType.Name() == field.DBName {
-						columnType = columnSrcType
-					}
-				}
-			}
-
-			if columnType == nil {
-				return fmt.Errorf("column `%s` need to add, not modify", field.Name)
-			}
-
 			fullDataType := m.FullDataTypeOf(field)
-			if srcUnique, ok := columnType.Unique(); ok && srcUnique && field.Unique {
-				// if source field is unique, and target field is unique too,
-				// need to delete the `UNIQUE` field for TiDB
+			if m.Dialector.DontSupportRenameColumnUnique {
 				fullDataType.SQL = strings.Replace(fullDataType.SQL, " UNIQUE ", " ", 1)
 			}
+
 			return m.DB.Exec(
 				"ALTER TABLE ? MODIFY COLUMN ? ?",
 				clause.Table{Name: stmt.Table}, clause.Column{Name: field.DBName}, fullDataType,

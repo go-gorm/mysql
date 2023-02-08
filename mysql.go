@@ -40,6 +40,7 @@ type Config struct {
 	DontSupportRenameColumn       bool
 	DontSupportForShareClause     bool
 	DontSupportNullAsDefaultValue bool
+	DontSupportRenameColumnUnique bool
 }
 
 type Dialector struct {
@@ -137,6 +138,10 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 			dialector.Config.DontSupportRenameIndex = true
 			dialector.Config.DontSupportRenameColumn = true
 			dialector.Config.DontSupportForShareClause = true
+		}
+
+		if strings.Contains(dialector.ServerVersion, "TiDB") {
+			dialector.Config.DontSupportRenameColumnUnique = true
 		}
 	}
 
