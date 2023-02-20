@@ -399,6 +399,14 @@ func (dialector Dialector) getSchemaStringType(field *schema.Field) string {
 }
 
 func (dialector Dialector) getSchemaTimeType(field *schema.Field) string {
+	var timeType string
+	// Distinguish between schema.Time and tag time
+	if val, ok := field.TagSettings["TYPE"]; ok {
+		timeType = val
+	} else {
+		timeType = "datetime"
+	}
+
 	if !dialector.DisableDatetimePrecision && field.Precision == 0 {
 		field.Precision = *dialector.DefaultDatetimePrecision
 	}
@@ -409,9 +417,9 @@ func (dialector Dialector) getSchemaTimeType(field *schema.Field) string {
 	}
 
 	if field.NotNull || field.PrimaryKey {
-		return "datetime" + precision
+		return timeType + precision
 	}
-	return "datetime" + precision + " NULL"
+	return timeType + precision + " NULL"
 }
 
 func (dialector Dialector) getSchemaBytesType(field *schema.Field) string {
