@@ -60,9 +60,25 @@ var (
 	defaultDatetimePrecision = 3
 )
 
-func Open(dsn string) gorm.Dialector {
-	dsnConf, _ := mysql.ParseDSN(dsn)
-	return &Dialector{Config: &Config{DSN: dsn, DSNConfig: dsnConf}}
+func Open(dsn interface{}) gorm.Dialector {
+	switch dsn.(type) {
+	case string:
+		dsnStr := dsn.(string)
+		dsnConf, _ := mysql.ParseDSN(dsnStr)
+		return &Dialector{
+			Config: &Config{
+				DSN:       dsnStr,
+				DSNConfig: dsnConf,
+			}}
+	case *mysql.Config:
+		dsnConf := dsn.(*mysql.Config)
+		return &Dialector{
+			Config: &Config{
+				DSN:       dsnConf.FormatDSN(),
+				DSNConfig: dsnConf,
+			}}
+	}
+	return nil
 }
 
 func New(config Config) gorm.Dialector {

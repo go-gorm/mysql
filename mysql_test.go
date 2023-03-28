@@ -3,7 +3,39 @@ package mysql
 import (
 	"bytes"
 	"testing"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
+
+func TestOpen(t *testing.T) {
+	dialector := Open("gorm:gorm@tcp(127.0.0.1:9910)/gorm?charset=utf8&parseTime=True&loc=Local")
+	if dialector == nil {
+		t.Error("dialector should not be nil")
+	}
+
+	dialector = Open(&mysql.Config{
+		User:      "gorm",
+		Passwd:    "gorm",
+		Net:       "tcp",
+		Addr:      "127.0.0.1:9910",
+		DBName:    "gorm",
+		Collation: "utf8mb4_general_ci",
+		Loc:       time.Local,
+		Params: map[string]string{
+			"charset": "utf8",
+		},
+		ParseTime: true,
+	})
+	if dialector == nil {
+		t.Error("dialector should not be nil")
+	}
+
+	dialector = Open(1)
+	if dialector != nil {
+		t.Error("dialector should be nil")
+	}
+}
 
 func TestDialector_QuoteTo(t *testing.T) {
 	testdatas := []struct {
