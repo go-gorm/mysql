@@ -69,14 +69,16 @@ func Open(dsn interface{}) gorm.Dialector {
 			Config: &Config{
 				DSN:       dsnStr,
 				DSNConfig: dsnConf,
-			}}
+			},
+		}
 	case *mysql.Config:
 		dsnConf := dsn.(*mysql.Config)
 		return &Dialector{
 			Config: &Config{
 				DSN:       dsnConf.FormatDSN(),
 				DSNConfig: dsnConf,
-			}}
+			},
+		}
 	}
 	return nil
 }
