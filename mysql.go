@@ -333,9 +333,6 @@ type localTimeInterface interface {
 }
 
 func (dialector Dialector) Explain(sql string, vars ...interface{}) string {
-	if dialector.DSNConfig == nil {
-		dialector.DSNConfig, _ = mysql.ParseDSN(dialector.DSN)
-	}
 	if dialector.DSNConfig != nil && dialector.DSNConfig.Loc != nil {
 		for i, v := range vars {
 			if p, ok := v.(localTimeInterface); ok {
