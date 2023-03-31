@@ -18,8 +18,32 @@ func TestOpen(t *testing.T) {
 		t.Error("dialector should not be nil")
 	}
 
+	dialector = Open(*mysql.NewConfig())
+	if dialector == nil {
+		t.Error("dialector should not be nil")
+	}
+
+	dialector = Open(nil)
+	d, ok := dialector.(*Dialector)
+	if !ok {
+		t.Fatal("dialector should be Dialector")
+	}
+	if d.DSN != "" {
+		t.Error("dialector should be empty")
+	}
+	if d.DSNConfig != nil {
+		t.Error("dialector should be nil")
+	}
+
 	dialector = Open(1)
-	if dialector != nil {
+	d, ok = dialector.(*Dialector)
+	if !ok {
+		t.Fatal("dialector should be Dialector")
+	}
+	if d.DSN != "" {
+		t.Error("dialector should be empty")
+	}
+	if d.DSNConfig != nil {
 		t.Error("dialector should be nil")
 	}
 }
