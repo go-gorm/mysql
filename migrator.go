@@ -367,3 +367,11 @@ func (m Migrator) CurrentSchema(stmt *gorm.Statement, table string) (string, str
 func (m Migrator) GetTypeAliases(databaseTypeName string) []string {
 	return typeAliasMap[databaseTypeName]
 }
+
+func (m Migrator) GetTableComment(tableName string) (comment string, err error) {
+	err = m.DB.Raw(
+		"SELECT TABLE_COMMENT from Information_schema.TABLES where TABLE_SCHEMA=? AND TABLE_NAME=? limit 1",
+		m.Migrator.CurrentDatabase(), tableName,
+	).Scan(&comment).Error
+	return
+}
