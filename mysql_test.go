@@ -3,7 +3,29 @@ package mysql
 import (
 	"bytes"
 	"testing"
+
+	"github.com/go-sql-driver/mysql"
 )
+
+func TestNew(t *testing.T) {
+	dialector := New(Config{DSN: "gorm:gorm@tcp(127.0.0.1:9910)/gorm?charset=utf8&parseTime=True&loc=Local"})
+	d, ok := dialector.(*Dialector)
+	if !ok {
+		t.Fatal("dialector is not *Dialector")
+	}
+	if d.DSNConfig == nil {
+		t.Error("dialector.DSNConfig is nil")
+	}
+
+	dialector = New(Config{DSNConfig: mysql.NewConfig()})
+	d, ok = dialector.(*Dialector)
+	if !ok {
+		t.Fatal("dialector is not *Dialector")
+	}
+	if d.DSN == "" {
+		t.Error("dialector.DSN is empty")
+	}
+}
 
 func TestDialector_QuoteTo(t *testing.T) {
 	testdatas := []struct {
