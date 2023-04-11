@@ -368,10 +368,27 @@ func (m Migrator) GetTypeAliases(databaseTypeName string) []string {
 	return typeAliasMap[databaseTypeName]
 }
 
-func (m Migrator) GetTableComment(tableName string) (comment string, err error) {
-	err = m.DB.Raw(
-		"SELECT TABLE_COMMENT from Information_schema.TABLES where TABLE_SCHEMA=? AND TABLE_NAME=? limit 1",
-		m.Migrator.CurrentDatabase(), tableName,
-	).Scan(&comment).Error
-	return
+// TableType table type return tableType,error
+func (m Migrator) TableType(value interface{}) (tableType gorm.TableType, err error) {
+	var table migrator.TableType
+
+	err = m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		var (
+			values = []interface{}{
+				&table.CatalogValue, &table.SchemaValue, &table.NameValue, &table.TypeValue, &table.EngineValue, &table.CommentValue,
+			}
+			currentDatabase, tableName = m.CurrentSchema(stmt, stmt.Table)
+			tableTypeSQL               = "SELECT table_catalog, table_schema, table_name,table_type, engine, table_comment FROM information_schema.tables WHERE table_schema = ? AND table_name = ?"
+		)
+
+		row := m.DB.Table(tableName).Raw(tableTypeSQL, currentDatabase, tableName).Row()
+
+		if scanErr := row.Scan(values...); scanErr != nil {
+			return scanErr
+		}
+
+		return nil
+	})
+
+	return table, err
 }
