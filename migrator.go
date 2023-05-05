@@ -367,3 +367,28 @@ func (m Migrator) CurrentSchema(stmt *gorm.Statement, table string) (string, str
 func (m Migrator) GetTypeAliases(databaseTypeName string) []string {
 	return typeAliasMap[databaseTypeName]
 }
+
+// TableType table type return tableType,error
+func (m Migrator) TableType(value interface{}) (tableType gorm.TableType, err error) {
+	var table migrator.TableType
+
+	err = m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		var (
+			values = []interface{}{
+				&table.SchemaValue, &table.NameValue, &table.TypeValue, &table.CommentValue,
+			}
+			currentDatabase, tableName = m.CurrentSchema(stmt, stmt.Table)
+			tableTypeSQL               = "SELECT table_schema, table_name, table_type, table_comment FROM information_schema.tables WHERE table_schema = ? AND table_name = ?"
+		)
+
+		row := m.DB.Table(tableName).Raw(tableTypeSQL, currentDatabase, tableName).Row()
+
+		if scanErr := row.Scan(values...); scanErr != nil {
+			return scanErr
+		}
+
+		return nil
+	})
+
+	return table, err
+}
