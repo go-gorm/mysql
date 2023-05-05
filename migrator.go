@@ -375,10 +375,10 @@ func (m Migrator) TableType(value interface{}) (tableType gorm.TableType, err er
 	err = m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		var (
 			values = []interface{}{
-				&table.CatalogValue, &table.SchemaValue, &table.NameValue, &table.TypeValue, &table.EngineValue, &table.CommentValue,
+				&table.SchemaValue, &table.NameValue, &table.TypeValue, &table.CommentValue,
 			}
 			currentDatabase, tableName = m.CurrentSchema(stmt, stmt.Table)
-			tableTypeSQL               = "SELECT table_catalog, table_schema, table_name,table_type, engine, table_comment FROM information_schema.tables WHERE table_schema = ? AND table_name = ?"
+			tableTypeSQL               = "SELECT table_schema, table_name, table_type, table_comment FROM information_schema.tables WHERE table_schema = ? AND table_name = ?"
 		)
 
 		row := m.DB.Table(tableName).Raw(tableTypeSQL, currentDatabase, tableName).Row()
