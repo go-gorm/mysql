@@ -315,9 +315,13 @@ func (m Migrator) GetIndexes(value interface{}) ([]gorm.Index, error) {
 		if scanErr != nil {
 			return scanErr
 		}
-		indexMap := groupByIndexName(result)
+		indexMap, indexNames := groupByIndexName(result)
 
-		for _, idx := range indexMap {
+		for _, name := range indexNames {
+			idx := indexMap[name]
+			if len(idx) == 0 {
+				continue
+			}
 			tempIdx := &migrator.Index{
 				TableName: idx[0].TableName,
 				NameValue: idx[0].IndexName,
@@ -348,12 +352,16 @@ type Index struct {
 	NonUnique  int32  `gorm:"column:NON_UNIQUE"`
 }
 
-func groupByIndexName(indexList []*Index) map[string][]*Index {
+func groupByIndexName(indexList []*Index) (map[string][]*Index, []string) {
 	columnIndexMap := make(map[string][]*Index, len(indexList))
+	indexNames := make([]string, 0, len(indexList))
 	for _, idx := range indexList {
+		if _, ok := columnIndexMap[idx.IndexName]; !ok {
+			indexNames = append(indexNames, idx.IndexName)
+		}
 		columnIndexMap[idx.IndexName] = append(columnIndexMap[idx.IndexName], idx)
 	}
-	return columnIndexMap
+	return columnIndexMap, indexNames
 }
 
 func (m Migrator) CurrentSchema(stmt *gorm.Statement, table string) (string, string) {
