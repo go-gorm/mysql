@@ -51,8 +51,8 @@ func (m Migrator) AlterColumn(value interface{}, field string) error {
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if field := stmt.Schema.LookUpField(field); field != nil {
 			fullDataType := m.FullDataTypeOf(field)
-			if m.Dialector.DontSupportRenameColumnUnique {
-				fullDataType.SQL = strings.Replace(fullDataType.SQL, " UNIQUE ", " ", 1)
+			if m.Dialector.DontSupportRenameColumnUnique || field.Unique {
+				fullDataType.SQL = strings.Replace(fullDataType.SQL, " UNIQUE", " ", 1)
 			}
 
 			return m.DB.Exec(
