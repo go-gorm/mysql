@@ -49,16 +49,18 @@ func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
 
 func (m Migrator) AlterColumn(value interface{}, field string) error {
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
-		if field := stmt.Schema.LookUpField(field); field != nil {
-			fullDataType := m.FullDataTypeOf(field)
-			if m.Dialector.DontSupportRenameColumnUnique {
-				fullDataType.SQL = strings.Replace(fullDataType.SQL, " UNIQUE ", " ", 1)
-			}
+		if stmt.Schema != nil {
+			if field := stmt.Schema.LookUpField(field); field != nil {
+				fullDataType := m.FullDataTypeOf(field)
+				if m.Dialector.DontSupportRenameColumnUnique {
+					fullDataType.SQL = strings.Replace(fullDataType.SQL, " UNIQUE ", " ", 1)
+				}
 
-			return m.DB.Exec(
-				"ALTER TABLE ? MODIFY COLUMN ? ?",
-				clause.Table{Name: stmt.Table}, clause.Column{Name: field.DBName}, fullDataType,
-			).Error
+				return m.DB.Exec(
+					"ALTER TABLE ? MODIFY COLUMN ? ?",
+					clause.Table{Name: stmt.Table}, clause.Column{Name: field.DBName}, fullDataType,
+				).Error
+			}
 		}
 		return fmt.Errorf("failed to look up field with name: %s", field)
 	})
@@ -101,14 +103,16 @@ func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error
 		}
 
 		var field *schema.Field
-		if f := stmt.Schema.LookUpField(oldName); f != nil {
-			oldName = f.DBName
-			field = f
-		}
+		if stmt.Schema != nil {
+			if f := stmt.Schema.LookUpField(oldName); f != nil {
+				oldName = f.DBName
+				field = f
+			}
 
-		if f := stmt.Schema.LookUpField(newName); f != nil {
-			newName = f.DBName
-			field = f
+			if f := stmt.Schema.LookUpField(newName); f != nil {
+				newName = f.DBName
+				field = f
+			}
 		}
 
 		if field != nil {
@@ -139,22 +143,24 @@ func (m Migrator) RenameIndex(value interface{}, oldName, newName string) error 
 			return err
 		}
 
-		if idx := stmt.Schema.LookIndex(newName); idx == nil {
-			if idx = stmt.Schema.LookIndex(oldName); idx != nil {
-				opts := m.BuildIndexOptions(idx.Fields, stmt)
-				values := []interface{}{clause.Column{Name: newName}, clause.Table{Name: stmt.Table}, opts}
+		if stmt.Schema != nil {
+			if idx := stmt.Schema.LookIndex(newName); idx == nil {
+				if idx = stmt.Schema.LookIndex(oldName); idx != nil {
+					opts := m.BuildIndexOptions(idx.Fields, stmt)
+					values := []interface{}{clause.Column{Name: newName}, clause.Table{Name: stmt.Table}, opts}
 
-				createIndexSQL := "CREATE "
-				if idx.Class != "" {
-					createIndexSQL += idx.Class + " "
+					createIndexSQL := "CREATE "
+					if idx.Class != "" {
+						createIndexSQL += idx.Class + " "
+					}
+					createIndexSQL += "INDEX ? ON ??"
+
+					if idx.Type != "" {
+						createIndexSQL += " USING " + idx.Type
+					}
+
+					return m.DB.Exec(createIndexSQL, values...).Error
 				}
-				createIndexSQL += "INDEX ? ON ??"
-
-				if idx.Type != "" {
-					createIndexSQL += " USING " + idx.Type
-				}
-
-				return m.DB.Exec(createIndexSQL, values...).Error
 			}
 		}
 
