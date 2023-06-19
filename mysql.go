@@ -268,9 +268,8 @@ func (dialector Dialector) Migrator(db *gorm.DB) gorm.Migrator {
 	return Migrator{
 		Migrator: migrator.Migrator{
 			Config: migrator.Config{
-				UniqueAffectedByUniqueIndex: true,
-				DB:                          db,
-				Dialector:                   dialector,
+				DB:        db,
+				Dialector: dialector,
 			},
 		},
 		Dialector: dialector,

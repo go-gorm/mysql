@@ -47,6 +47,78 @@ func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
 	return expr
 }
 
+// MigrateColumnUnique migrate column's UNIQUE constraint.
+// In MySQL, ColumnType's Unique is affected by UniqueIndex, so we have to take care of the UniqueIndex.
+func (m Migrator) MigrateColumnUnique(value interface{}, field *schema.Field, columnType gorm.ColumnType) error {
+	unique, ok := columnType.Unique()
+	if !ok || field.PrimaryKey {
+		return nil // skip primary key
+	}
+
+	queryTx, execTx := m.GetQueryAndExecTx()
+	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		// We're currently only receiving boolean values on `Unique` tag,
+		// so the UniqueConstraint name is fixed
+		constraint := m.DB.NamingStrategy.UniqueName(stmt.Table, field.DBName)
+		if unique {
+			// Clean up redundant unique indexes
+			indexes, _ := queryTx.Migrator().GetIndexes(value)
+			for _, index := range indexes {
+				if uni, ok := index.Unique(); !ok || !uni {
+					continue
+				}
+				if columns := index.Columns(); len(columns) != 1 || columns[0] != field.DBName {
+					continue
+				}
+				if name := index.Name(); name == constraint || name == field.UniqueIndex {
+					continue
+				}
+				if err := execTx.Migrator().DropIndex(value, index.Name()); err != nil {
+					return err
+				}
+			}
+
+			hasConstraint := queryTx.Migrator().HasConstraint(value, constraint)
+			switch {
+			case field.Unique && !hasConstraint:
+				if field.Unique {
+					if err := execTx.Migrator().CreateConstraint(value, constraint); err != nil {
+						return err
+					}
+				}
+			// field isn't Unique but ColumnType's Unique is reported by UniqueConstraint.
+			case !field.Unique && hasConstraint:
+				if err := execTx.Migrator().DropConstraint(value, constraint); err != nil {
+					return err
+				}
+				if field.UniqueIndex != "" {
+					if err := execTx.Migrator().CreateIndex(value, field.UniqueIndex); err != nil {
+						return err
+					}
+				}
+			}
+
+			if field.UniqueIndex != "" && !queryTx.Migrator().HasIndex(value, field.UniqueIndex) {
+				if err := execTx.Migrator().CreateIndex(value, field.UniqueIndex); err != nil {
+					return err
+				}
+			}
+		} else {
+			if field.Unique {
+				if err := execTx.Migrator().CreateConstraint(value, constraint); err != nil {
+					return err
+				}
+			}
+			if field.UniqueIndex != "" {
+				if err := execTx.Migrator().CreateIndex(value, field.UniqueIndex); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+}
+
 func (m Migrator) AlterColumn(value interface{}, field string) error {
 	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
 		if stmt.Schema != nil {
