@@ -40,6 +40,7 @@ db, err := gorm.Open(mysql.New(mysql.Config{
 import (
   _ "example.com/my_mysql_driver"
   "gorm.io/gorm"
+  "gorm.io/driver/mysql"  // add this pk, this package is used below?
 )
 
 db, err := gorm.Open(mysql.New(mysql.Config{
