@@ -200,6 +200,10 @@ func (dialector Dialector) ClauseBuilders() map[string]clause.ClauseBuilder {
 				c.Build(builder)
 				return
 			}
+			// onConflict DoNothing, remove ON DUPLICATE KEY UPDATE statement
+			if onConflict.DoNothing {
+				return
+			}
 
 			builder.WriteString("ON DUPLICATE KEY UPDATE ")
 			if len(onConflict.DoUpdates) == 0 {
