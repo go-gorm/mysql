@@ -180,12 +180,12 @@ func (m Migrator) TiDBVersion() (isTiDB bool, major, minor, patch int, err error
 	}
 
 	if minor, err = strconv.Atoi(realVersionArray[1]); err != nil {
-		err = fmt.Errorf("failed to parse the version of TiDB, the minor version is: %s", realVersionArray[0])
+		err = fmt.Errorf("failed to parse the version of TiDB, the minor version is: %s", realVersionArray[1])
 		return
 	}
 
 	if patch, err = strconv.Atoi(realVersionArray[2]); err != nil {
-		err = fmt.Errorf("failed to parse the version of TiDB, the patch version is: %s", realVersionArray[0])
+		err = fmt.Errorf("failed to parse the version of TiDB, the patch version is: %s", realVersionArray[2])
 		return
 	}
 
