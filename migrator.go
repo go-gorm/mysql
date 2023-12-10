@@ -37,6 +37,42 @@ type Migrator struct {
 	Dialector
 }
 
+// AutoMigrate auto migrate values
+//
+//	// Migrating and setting a comment for a single table
+//	db.Set("gorm:table_comments", "用户信息表").AutoMigrate(&User{})
+//
+//	// Migrating and setting comments for multiple tables
+//	db.Set("gorm:table_comments", []string{"用户信息表", "公司信息表"}).AutoMigrate(&User{}, &Company{})
+func (m Migrator) AutoMigrate(values ...interface{}) error {
+	if err := m.Migrator.AutoMigrate(values...); err != nil {
+		return err
+	}
+
+	if tableComments, ok := m.DB.Get("gorm:table_comments"); ok {
+		var comments []string
+		switch c := tableComments.(type) {
+		case string:
+			comments = append(comments, c)
+		case []string:
+			comments = c
+		default:
+			return nil
+		}
+		for i := 0; i < len(values) && i < len(comments); i++ {
+			value := values[i]
+			comment := strings.ReplaceAll(comments[i], "'", "''")
+			tx := m.DB.Session(&gorm.Session{})
+			if err := m.RunWithValue(value, func(stmt *gorm.Statement) error {
+				return tx.Exec(fmt.Sprintf("ALTER TABLE ? COMMENT '%s'", comment), m.CurrentTable(stmt)).Error
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (m Migrator) FullDataTypeOf(field *schema.Field) clause.Expr {
 	expr := m.Migrator.FullDataTypeOf(field)
 
