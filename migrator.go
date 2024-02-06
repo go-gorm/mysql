@@ -224,6 +224,29 @@ func (m Migrator) RenameColumn(value interface{}, oldName, newName string) error
 	})
 }
 
+func (m Migrator) DropConstraint(value interface{}, name string) error {
+	if !m.Dialector.Config.DontSupportDropConstraint {
+		return m.Migrator.DropConstraint(value, name)
+	}
+
+	return m.RunWithValue(value, func(stmt *gorm.Statement) error {
+		constraint, table := m.GuessConstraintInterfaceAndTable(stmt, name)
+		if constraint != nil {
+			name = constraint.GetName()
+			switch constraint.(type) {
+			case *schema.Constraint:
+				return m.DB.Exec("ALTER TABLE ? DROP FOREIGN KEY ?", clause.Table{Name: table}, clause.Column{Name: name}).Error
+			case *schema.CheckConstraint:
+				return m.DB.Exec("ALTER TABLE ? DROP CHECK ?", clause.Table{Name: table}, clause.Column{Name: name}).Error
+			}
+		}
+		if m.HasIndex(value, name) {
+			return m.DB.Exec("ALTER TABLE ? DROP INDEX ?", clause.Table{Name: table}, clause.Column{Name: name}).Error
+		}
+		return nil
+	})
+}
+
 func (m Migrator) RenameIndex(value interface{}, oldName, newName string) error {
 	if !m.Dialector.DontSupportRenameIndex {
 		return m.RunWithValue(value, func(stmt *gorm.Statement) error {
