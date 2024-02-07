@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0
-	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
+	gorm.io/gorm v1.25.7
 )
