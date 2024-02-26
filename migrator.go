@@ -378,7 +378,8 @@ func (m Migrator) ColumnTypes(value interface{}) ([]gorm.ColumnType, error) {
 				(len(s) == 2 && s == "''") {
 				s = s[1 : len(s)-1]
 			}
-			column.DefaultValueValue.String = s
+			column.DefaultValueValue.String = strings.ReplaceAll(strings.ReplaceAll(s, "\\'", "_"), "'", "_")
+
 			if m.Dialector.DontSupportNullAsDefaultValue {
 				// rewrite mariadb default value like other version
 				if column.DefaultValueValue.Valid && column.DefaultValueValue.String == "NULL" {
