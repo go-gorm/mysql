@@ -26,6 +26,7 @@ const (
 )
 
 type Config struct {
+	Context                       context.Context
 	DriverName                    string
 	ServerVersion                 string
 	DSN                           string
@@ -125,7 +126,13 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 
 	withReturning := false
 	if !dialector.Config.SkipInitializeWithVersion {
-		err = db.ConnPool.QueryRowContext(context.Background(), "SELECT VERSION()").Scan(&dialector.ServerVersion)
+		ctx := dialector.Context
+
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		err = db.ConnPool.QueryRowContext(ctx, "SELECT VERSION()").Scan(&dialector.ServerVersion)
 		if err != nil {
 			return err
 		}
