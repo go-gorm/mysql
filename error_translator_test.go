@@ -30,6 +30,11 @@ func TestDialector_Translate(t *testing.T) {
 			want: gorm.ErrDuplicatedKey,
 		},
 		{
+			name: "it should translate error to ErrForeignKeyViolated when the error number is 1451",
+			args: args{err: &mysql.MySQLError{Number: uint16(1451)}},
+			want: gorm.ErrForeignKeyViolated,
+		},
+		{
 			name: "it should translate error to ErrForeignKeyViolated when the error number is 1452",
 			args: args{err: &mysql.MySQLError{Number: uint16(1452)}},
 			want: gorm.ErrForeignKeyViolated,
