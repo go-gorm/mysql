@@ -412,7 +412,7 @@ func (dialector Dialector) getSchemaStringType(field *schema.Field) string {
 }
 
 func (dialector Dialector) getSchemaTimeType(field *schema.Field) string {
-	if !dialector.DisableDatetimePrecision && field.Precision == 0 {
+	if !dialector.DisableDatetimePrecision && field.Precision == 0 && field.TagSettings["PRECISION"] == "" {
 		field.Precision = *dialector.DefaultDatetimePrecision
 	}
 
