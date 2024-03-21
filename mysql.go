@@ -167,8 +167,6 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 	}
 
 	if !dialector.Config.DisableWithReturning && withReturning {
-		callbackConfig.LastInsertIDReversed = true
-
 		if !utils.Contains(callbackConfig.CreateClauses, "RETURNING") {
 			callbackConfig.CreateClauses = append(callbackConfig.CreateClauses, "RETURNING")
 		}
