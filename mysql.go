@@ -477,18 +477,8 @@ func (dialector Dialector) getSchemaIntAndUnitType(field *schema.Field) string {
 		return sqlType
 	}
 
-	switch {
-	case field.Size <= 8:
-		return constraint("tinyint")
-	case field.Size <= 16:
-		return constraint("smallint")
-	case field.Size <= 24:
-		return constraint("mediumint")
-	case field.Size <= 32:
-		return constraint("int")
-	default:
-		return constraint("bigint")
-	}
+	return constraint("int")
+
 }
 
 func (dialector Dialector) getSchemaCustomType(field *schema.Field) string {
