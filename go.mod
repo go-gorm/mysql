@@ -1,9 +1,10 @@
 module gorm.io/driver/mysql
 
 go 1.18
+toolchain go1.24.1
 
 require (
-	github.com/go-sql-driver/mysql v1.8.1
+	github.com/go-sql-driver/mysql v1.9.1
 	gorm.io/gorm v1.25.11
 )
 
