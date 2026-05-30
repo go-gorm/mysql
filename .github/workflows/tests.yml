@@ -11,13 +11,13 @@ jobs:
   run-tests:
     strategy:
       matrix:
-        go: ['1.21', '1.20', '1.19']
+        go: ['stable', 'oldstable']
         platform: [ubuntu-latest]
     runs-on: ubuntu-latest
 
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go }}
 
