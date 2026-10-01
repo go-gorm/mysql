@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/go-sql-driver/mysql"
 
 	"gorm.io/gorm"
@@ -16,7 +18,7 @@ var errCodes = map[uint16]error{
 func (dialector Dialector) Translate(err error) error {
 	if mysqlErr, ok := err.(*mysql.MySQLError); ok {
 		if translatedErr, found := errCodes[mysqlErr.Number]; found {
-			return translatedErr
+			return fmt.Errorf("%w: %w", translatedErr, mysqlErr)
 		}
 		return mysqlErr
 	}
