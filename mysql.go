@@ -133,8 +133,10 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 		}
 
 		if strings.Contains(dialector.ServerVersion, "MariaDB") {
-			dialector.Config.DontSupportRenameIndex = true
-			dialector.Config.DontSupportRenameColumn = true
+			if !checkVersion(dialector.ServerVersion, "10.5.2") {
+				dialector.Config.DontSupportRenameIndex = true
+				dialector.Config.DontSupportRenameColumn = true
+			}
 			dialector.Config.DontSupportForShareClause = true
 			dialector.Config.DontSupportNullAsDefaultValue = true
 			withReturning = checkVersion(dialector.ServerVersion, "10.5")
@@ -538,5 +540,6 @@ func checkVersion(newVersion, oldVersion string) bool {
 		return nvi > ovi
 	}
 
-	return false
+	// all common components are equal, e.g. "10.5.2-MariaDB-ubu2404" and "10.5.2", so version counts as newer or equal unless it is shorter (e.g. "10.5.2" vs. "10.5") than the compared one
+	return len(newVersions) >= len(oldVersions)
 }
