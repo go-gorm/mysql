@@ -97,3 +97,33 @@ func TestCheckVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckVersionEqual(t *testing.T) {
+	versions := [][2]string{
+		{"10.5.2-MariaDB-ubu2404", "10.5.2"},
+		{"10.5.2", "10.5.2"},
+		{"10.5.29-MariaDB-1:10.5.29+maria~ubu2004", "10.5.2"},
+		{"11.4.12-MariaDB-ubu2404", "10.5.2"},
+	}
+
+	for _, v := range versions {
+		if !checkVersion(v[0], v[1]) {
+			t.Fatalf("returns false for %v, expected to be newer or equal to %v", v[0], v[1])
+		}
+	}
+}
+
+func TestCheckVersionOlder(t *testing.T) {
+	versions := [][2]string{
+		{"10.5.1-MariaDB-ubu2404", "10.5.2"},
+		{"10.4.34-MariaDB-1:10.4.34+maria~ubu2004", "10.5.2"},
+		{"10.5", "10.5.2"},
+		{"5.7.44", "8.0.3"},
+	}
+
+	for _, v := range versions {
+		if checkVersion(v[0], v[1]) {
+			t.Fatalf("returns true for %v, expected to be older than %v", v[0], v[1])
+		}
+	}
+}
