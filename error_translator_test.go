@@ -40,6 +40,23 @@ func TestDialector_Translate(t *testing.T) {
 			want: gorm.ErrForeignKeyViolated,
 		},
 		{
+			name: "it should translate error to ErrCheckConstraintViolated when the error number is 3819",
+			args: args{err: &mysql.MySQLError{Number: uint16(3819)}},
+			want: gorm.ErrCheckConstraintViolated,
+		},
+		{
+			name:   "it should translate error to ErrCheckConstraintViolated when the error number is 4025 on MariaDB",
+			fields: fields{Config: &Config{ServerVersion: "11.4.2-MariaDB"}},
+			args:   args{err: &mysql.MySQLError{Number: uint16(4025)}},
+			want:   gorm.ErrCheckConstraintViolated,
+		},
+		{
+			name:   "it should not translate the error when the error number is 4025 on MySQL",
+			fields: fields{Config: &Config{ServerVersion: "8.4.0"}},
+			args:   args{err: &mysql.MySQLError{Number: uint16(4025)}},
+			want:   &mysql.MySQLError{Number: uint16(4025)},
+		},
+		{
 			name: "it should not translate the error when the error number is not registered in translated error codes",
 			args: args{err: &mysql.MySQLError{Number: uint16(8888)}},
 			want: &mysql.MySQLError{Number: uint16(8888)},
